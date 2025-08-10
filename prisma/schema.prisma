@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  fullName  String
+  address   String?
+  email     String?  @unique
+  phone     String?
+  role      String   // เช่น admin, officer, viewer
+  createdAt DateTime @default(now())
+
+}
+
+model FiscalYear {
+  id        Int      @id @default(autoincrement())
+  year      Int      // เช่น 2568
+  createdAt DateTime @default(now())
+
+  constructionProjects ConstructionProject[]
+  buildingControls      BuildingControl[]
+  riskZones             RiskZone[]
+  zoningPlans           ZoningPlan[]
+}
+
+
+model ConstructionProject {
+  id            Int             @id @default(autoincrement())
+  name          String
+  status        String          // pending, approved, etc.
+  key          String          // รหัสโครงการ เช่น 2568-001
+  filePath  String?   // ✅ จำเป็น - ไฟล์จะถูกโหลดผ่าน path นี้
+  filename  String?   // ✅ จำเป็น - แสดงชื่อไฟล์ที่อัปโหลด
+  size      Int?      // ✅ จำเป็น - ตรวจสอบขนาด/แสดงผล
+  mime      String?  // ✅ ควรมี - ระบุชนิดไฟล์
+  comment       String?       // ความเห็นของเจ้าหน้าที่
+  latitude      Float?         // พิกัดละติจูดสำหรับแผนที่
+  longitude     Float?         // พิกัดลองจิจูดสำหรับแผนที่
+  fiscalYearId  Int
+  fiscalYear    FiscalYear      @relation(fields: [fiscalYearId], references: [id])
+  documents     FileAttachment[]
+
+  groupId       Int
+  group         ProjectGroup    @relation(fields: [groupId], references: [id])
+
+  createdAt     DateTime        @default(now())
+}
+
+model ProjectGroup {
+  id        Int       @id @default(autoincrement())
+  title     String    // เช่น "โครงการที่เสนอเข้าแผนพัฒนา"
+  subgroup  String       // เช่น 1, 2, 3
+  projects  ConstructionProject[]
+
+  createdAt DateTime  @default(now())
+}
+
+model BuildingControl {
+  id            Int       @id @default(autoincrement())
+  buildingType  String     // ม.32, มีใบประกันภัย ฯลฯ
+  applicantName String
+  fiscalYearId  Int
+  fiscalYear    FiscalYear @relation(fields: [fiscalYearId], references: [id])
+  documents     FileAttachment[]
+
+  createdAt     DateTime   @default(now())
+}
+
+model RiskZone {
+  id            Int       @id @default(autoincrement())
+  zoneType      String     // เสาสาธารณะ, พื้นที่ป่า ฯลฯ
+  description   String?
+  fiscalYearId  Int
+  fiscalYear    FiscalYear @relation(fields: [fiscalYearId], references: [id])
+  documents     FileAttachment[]
+
+  createdAt     DateTime   @default(now())
+}
+
+model ZoningPlan {
+  id            Int       @id @default(autoincrement())
+  areaName      String
+  notes         String?
+  fiscalYearId  Int
+  fiscalYear    FiscalYear @relation(fields: [fiscalYearId], references: [id])
+  documents     FileAttachment[]
+
+  createdAt     DateTime   @default(now())
+}
+
+model FileAttachment {
+  id             Int       @id @default(autoincrement())
+  filename       String
+  filetype       String     // pdf, jpg, dwg ฯลฯ
+  filepath       String     // ที่อยู่ไฟล์ในระบบ (เช่น /uploads/2568/projectA/file1.pdf)
+  uploadedAt     DateTime   @default(now())
+
+  // optional foreign keys
+  constructionProjectId Int? 
+  buildingControlId     Int?
+  riskZoneId            Int?
+  zoningPlanId          Int?
+
+  constructionProject ConstructionProject? @relation(fields: [constructionProjectId], references: [id])
+  buildingControl     BuildingControl?     @relation(fields: [buildingControlId], references: [id])
+  riskZone            RiskZone?            @relation(fields: [riskZoneId], references: [id])
+  zoningPlan          ZoningPlan?          @relation(fields: [zoningPlanId], references: [id])
+}

@@ -1,0 +1,117 @@
+{
+  "messages": {
+    "bulkDeleteTitle": "Bulk Delete",
+    "confirmBulkDelete": "Are you sure you want to delete the selected records?",
+    "confirmDelete": "Are you sure you want to delete this record?",
+    "error": "An error occurred",
+    "errorLoading": "Error loading data",
+    "loading": "Loading...",
+    "loginWelcome": "Login as administrator",
+    "noData": "No data",
+    "noDataAvailable": "No data available",
+    "noRecordsSelected": "Please select records to delete",
+    "noRecords": "No records",
+    "noRecordsInResource": "No records in this resource",
+    "success": "Success",
+    "welcomeOnBoard_title": "Welcome to the dashboard",
+    "pageNotFound_title": "Page not found",
+    "error404Action": "Error 404 occurred",
+    "theseRecordsWillBeRemoved_plural": "These records will all be deleted",
+    "addingResources_title": "Add Resources",
+    "addingResources_subtitle": "Add new models or data to the system",
+    "customizeResources_title": "Customize Resources",
+    "customizeResources_subtitle": "Customize the list and display of resources",
+    "customizeActions_title": "Customize Actions",
+    "customizeActions_subtitle": "Create or modify actions as needed",
+    "writeOwnComponents_title": "Write Your Own Components",
+    "writeOwnComponents_subtitle": "Create your own interface using React",
+    "customDashboard_title": "Custom Dashboard",
+    "customDashboard_subtitle": "Create your own custom homepage",
+    "roleBasedAccess_title": "Role-Based Access Control",
+    "roleBasedAccess_subtitle": "Define access based on user permissions",
+    "needMoreSolutions_title": "Need More Solutions?",
+    "needMoreSolutions_subtitle": "Our team is happy to help design for you",
+    "community_title": "Join the Community",
+    "community_subtitle": "Discuss and share with other developers",
+    "foundBug_title": "Found a Bug?",
+    "foundBug_subtitle": "Report it to us for improvements",
+    "welcomeOnBoard_subtitle": "Start using AdminJS now!",
+    "theseRecordsWillBeRemoved": "These records will be deleted",
+    "invalidCredentials": "Invalid username or password"
+  },
+
+  "actions": {
+    "bulkDelete": "Bulk Delete",
+    "delete": "Delete",
+    "edit": "Edit",
+    "list": "All Records",
+    "new": "Create New",
+    "show": "Show Details"
+  },
+
+  "buttons": {
+    "applyChanges": "Apply Changes",
+    "cancel": "Cancel",
+    "comfrim": "Confirm", 
+    "createFirstRecord": "Create First Record",
+    "filter": "Filter",
+    "resetFilter": "Reset Filter",
+    "resetPassword": "Reset Password",
+    "save": "Save",
+    "confirmRemovalMany_plural": "Confirm Bulk Deletion",
+    "successfullyCreated": "Created Successfully",
+    "confirm": "Confirm Deletion",
+    "confirmRemovalMany": "Confirm Bulk Deletion",
+    "contactUs": "Contact Us"
+  },
+
+  "labels": {
+  
+  },
+
+  "properties": {
+    "Amphur": "District",
+    "City": "Province",
+    "Email": "Email",
+    "Full_Name": "Full Name",
+    "Name_Agency": "Agency Name",
+    "Name_Company": "Company Name",
+    "Password": "Password",
+    "Phone_Number": "Phone Number",
+    "Status": "Status",
+    "Tumbon": "Subdistrict",
+    "Username": "Username",
+    "Zip_Code": "Postal Code",
+    "agency_code": "Agency Code",
+    "company": "Company",
+    "company_code": "Company Code",
+    "companyId": "Company",
+    "createdAt": "Created At",
+    "from": "From",
+    "id": "ID",
+    "no_Number": "Address Number",
+    "to": "To",
+    "updatedAt": "Updated At",
+    "userId": "User",
+    "Address": "Address Details",
+    "road": "Road"
+  },
+
+  "components": {
+    "LanguageSelector": {
+      "availableLanguages": {
+        "en": "English",
+        "th": "Thai"
+      }
+    },
+    "Login": {
+      "loginButton": "Login",
+      "properties": {
+        "email": "Email",
+        "password": "Password"
+      },
+      "welcomeHeader": "Welcome to Login",
+      "welcomeMessage": "Please log in to access the system"
+    }
+  }
+}

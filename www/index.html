@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบข้อมูลสถานที่ท่องเที่ยวแห่งชาติ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for government modern design */
+        .attraction-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .attraction-card:hover {
+            transform: translateY(-2px) translateX(4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Map markers with enhanced animation */
+        .map-marker {
+            animation: pulse 3s infinite;
+            transition: all 0.3s ease;
+        }
+        
+        .map-marker:hover {
+            animation: none;
+            transform: scale(1.3);
+            z-index: 10;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.15);
+            }
+        }
+
+        /* Sidebar animation */
+        .sidebar {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(0);
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-280px);
+        }
+
+        /* Mobile menu animation */
+        .mobile-menu {
+            transition: all 0.3s ease-in-out;
+            transform: translateX(-100%);
+        }
+        
+        .mobile-menu.open {
+            transform: translateX(0);
+        }
+
+        /* Government color scheme */
+        .gov-blue { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
+        .gov-accent { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
+        
+        /* Map leaf markers */
+        .leaf-marker {
+            position: relative;
+            width: 20px;
+            height: 20px;
+            background: #059669;
+            border-radius: 0 100% 0 100%;
+            transform: rotate(45deg);
+            border: 2px solid white;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .leaf-marker:hover {
+            transform: rotate(45deg) scale(1.4);
+            box-shadow: 0 6px 20px rgba(5, 150, 105, 0.6);
+        }
+        
+        .leaf-marker::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        /* Thailand map styling */
+        .thailand-shape {
+            clip-path: polygon(20% 10%, 80% 15%, 85% 25%, 90% 40%, 85% 55%, 80% 70%, 60% 85%, 40% 90%, 25% 75%, 15% 60%, 10% 40%, 15% 25%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Government Header Bar -->
+    <div class="bg-gradient-to-r from-blue-900 to-blue-800 text-white py-2">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center text-sm">
+                <div class="flex items-center space-x-6">
+                    <span>🇹🇭 ราชอาณาจักรไทย</span>
+                    <span class="hidden sm:inline">กระทรวงการท่องเที่ยวและกีฬา</span>
+                </div>
+                <div class="flex items-center space-x-4 text-xs">
+                    <span class="hidden md:inline">📞 สายด่วน 1672</span>
+                    <span>🌐 ภาษา: ไทย</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation -->
+    <nav class="gov-blue shadow-xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo Section -->
+                <div class="flex items-center space-x-4">
+                    <button id="sidebar-toggle" class="lg:hidden text-white hover:text-blue-200 focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                            <span class="text-blue-600 font-bold text-lg">🗺️</span>
+                        </div>
+                        <div>
+                            <h1 class="text-white font-bold text-lg leading-tight">ระบบข้อมูลการท่องเที่ยว</h1>
+                            <p class="text-blue-200 text-xs">Tourism Information System</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden lg:flex items-center space-x-1">
+        
+                </div>
+
+                <!-- User Section -->
+                <div class="hidden md:flex items-center space-x-3">
+                    <div class="text-right text-sm">
+                        <p class="text-white font-medium">เจ้าหน้าที่ระบบ</p>
+                        <p class="text-blue-200 text-xs">ฝ่ายข้อมูลการท่องเที่ยว</p>
+                    </div>
+                    <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                        <span class="text-white font-bold">👤</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="mobile-menu lg:hidden bg-blue-800 border-t border-blue-600">
+            <div class="px-4 py-3 space-y-2">
+                <a href="#" class="block bg-white bg-opacity-20 text-white px-4 py-3 rounded-lg font-medium">🏠 หน้าแรก</a>
+                <a href="#" class="block text-blue-200 hover:text-white hover:bg-white hover:bg-opacity-10 px-4 py-3 rounded-lg font-medium">🏛️ สถานที่ท่องเที่ยว</a>
+                <a href="#" class="block text-blue-200 hover:text-white hover:bg-white hover:bg-opacity-10 px-4 py-3 rounded-lg font-medium">🗺️ แผนที่</a>
+                <a href="#" class="block text-blue-200 hover:text-white hover:bg-white hover:bg-opacity-10 px-4 py-3 rounded-lg font-medium">📊 สถิติ</a>
+                <a href="#" class="block text-blue-200 hover:text-white hover:bg-white hover:bg-opacity-10 px-4 py-3 rounded-lg font-medium">📞 ติดต่อ</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Breadcrumb -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <nav class="flex text-sm text-gray-500">
+                <a href="#" class="hover:text-blue-600">หน้าแรก</a>
+                <span class="mx-2">/</span>
+                <a href="#" class="hover:text-blue-600">ระบบแผนที่</a>
+                <span class="mx-2">/</span>
+                <span class="text-gray-900 font-medium">สถานที่ท่องเที่ยวทั่วประเทศ</span>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="min-h-screen">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <!-- Header Section with Statistics -->
+            <div class="mb-8">
+                <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 mb-2">
+                            แผนที่สถานที่ท่องเที่ยวแห่งชาติ
+                        </h2>
+                        <p class="text-gray-600">
+                            ระบบข้อมูลสถานที่ท่องเที่ยวและมรดกทางวัฒนธรรมของประเทศไทย
+                        </p>
+                    </div>
+                    <div class="flex space-x-4 mt-4 lg:mt-0">
+                        <div class="bg-blue-50 rounded-xl p-4 text-center min-w-0 flex-1 lg:min-w-[100px]">
+                            <div class="text-2xl font-bold text-blue-600">1,247</div>
+                            <div class="text-xs text-gray-600 mt-1">สถานที่ท่องเที่ยว</div>
+                        </div>
+                        <div class="bg-green-50 rounded-xl p-4 text-center min-w-0 flex-1 lg:min-w-[100px]">
+                            <div class="text-2xl font-bold text-green-600">156</div>
+                            <div class="text-xs text-gray-600 mt-1">มรดกโลก</div>
+                        </div>
+                        <div class="bg-orange-50 rounded-xl p-4 text-center min-w-0 flex-1 lg:min-w-[100px]">
+                            <div class="text-2xl font-bold text-orange-600">77</div>
+                            <div class="text-xs text-gray-600 mt-1">จังหวัด</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Layout -->
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- Resizable Sidebar -->
+                <div id="sidebar" class="sidebar lg:w-80 bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <!-- Sidebar Header -->
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-gray-900">📍 สถานที่ท่องเที่ยว</h3>
+                            <button id="sidebar-close" class="lg:hidden text-gray-500 hover:text-gray-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <!-- Filter Tabs -->
+                        <div class="flex mt-4 bg-white rounded-xl p-1 shadow-sm">
+                            <button class="tab-btn active flex-1 py-2 px-3 text-center bg-blue-500 text-white rounded-lg font-medium text-sm transition-all">
+                                ยอดนิยม
+                            </button>
+                            <button class="tab-btn flex-1 py-2 px-3 text-center text-gray-600 hover:text-gray-900 rounded-lg font-medium text-sm transition-all">
+                                ใหม่ล่าสุด
+                            </button>
+                            <button class="tab-btn flex-1 py-2 px-3 text-center text-gray-600 hover:text-gray-900 rounded-lg font-medium text-sm transition-all">
+                                ใกล้เคียง
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="p-4 border-b border-gray-100">
+                        <div class="relative">
+                            <input type="text" placeholder="ค้นหาสถานที่..." 
+                                   class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                🔍
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attractions List -->
+                    <div class="flex-1 overflow-y-auto max-h-[600px]">
+                        <div class="p-4 space-y-3">
+                            <!-- Enhanced Attraction Cards -->
+                            <div class="attraction-card bg-gradient-to-r from-white to-blue-50 border border-blue-100 rounded-xl p-4 cursor-pointer hover:border-blue-300">
+                                <div class="flex items-start space-x-4">
+                                    <div class="relative">
+                                        <img src="https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=80&h=80&fit=crop&crop=center" 
+                                             alt="พระราชวังเก่า" 
+                                             class="w-16 h-16 rounded-xl object-cover border-2 border-white shadow-sm">
+                                        <div class="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                                            <span class="text-white text-xs">✓</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-blue-700 font-semibold text-base hover:text-blue-900 transition-colors">
+                                            พระราชวังเก่า (กรุงเทพฯ)
+                                        </h4>
+                                        <p class="text-gray-600 text-sm mt-1">🏛️ วัง • ⭐ 4.8 (2,341)</p>
+                                        <p class="text-gray-500 text-xs mt-1">📍 เขตพระนคร กรุงเทพมหานคร</p>
+                                        <div class="flex items-center mt-2 space-x-2">
+                                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">มรดกโลก</span>
+                                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">เปิดให้เข้าชม</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="attraction-card bg-gradient-to-r from-white to-green-50 border border-green-100 rounded-xl p-4 cursor-pointer hover:border-green-300">
+                                <div class="flex items-start space-x-4">
+                                    <div class="relative">
+                                        <img src="https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=80&h=80&fit=crop&crop=center" 
+                                             alt="วัดพระธาตุดอยสุเทพ" 
+                                             class="w-16 h-16 rounded-xl object-cover border-2 border-white shadow-sm">
+                                        <div class="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full border-2 border-white flex items-center justify-center">
+                                            <span class="text-white text-xs">🔥</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-green-700 font-semibold text-base hover:text-green-900 transition-colors">
+                                            วัดพระธาตุดอยสุเทพ
+                                        </h4>
+                                        <p class="text-gray-600 text-sm mt-1">⛩️ วัด • ⭐ 4.9 (5,678)</p>
+                                        <p class="text-gray-500 text-xs mt-1">📍 เชียงใหม่</p>
+                                        <div class="flex items-center mt-2 space-x-2">
+                                            <span class="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">ยอดนิยม</span>
+                                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">เปิด 24 ชม.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="attraction-card bg-gradient-to-r from-white to-purple-50 border border-purple-100 rounded-xl p-4 cursor-pointer hover:border-purple-300">
+                                <div class="flex items-start space-x-4">
+                                    <div class="relative">
+                                        <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=80&h=80&fit=crop&crop=center" 
+                                             alt="เขาใหญ่" 
+                                             class="w-16 h-16 rounded-xl object-cover border-2 border-white shadow-sm">
+                                        <div class="absolute -top-1 -right-1 w-5 h-5 bg-green-600 rounded-full border-2 border-white flex items-center justify-center">
+                                            <span class="text-white text-xs">🌿</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-purple-700 font-semibold text-base hover:text-purple-900 transition-colors">
+                                            อุทยานแห่งชาติเขาใหญ่
+                                        </h4>
+                                        <p class="text-gray-600 text-sm mt-1">🏞️ อุทยาน • ⭐ 4.7 (3,892)</p>
+                                        <p class="text-gray-500 text-xs mt-1">📍 นครราชสีมา</p>
+                                        <div class="flex items-center mt-2 space-x-2">
+                                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">ธรรมชาติ</span>
+                                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">UNESCO</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="attraction-card bg-gradient-to-r from-white to-yellow-50 border border-yellow-100 rounded-xl p-4 cursor-pointer hover:border-yellow-300">
+                                <div class="flex items-start space-x-4">
+                                    <div class="relative">
+                                        <img src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=80&h=80&fit=crop&crop=center" 
+                                             alt="หาดป่าตอง" 
+                                             class="w-16 h-16 rounded-xl object-cover border-2 border-white shadow-sm">
+                                        <div class="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
+                                            <span class="text-white text-xs">🌊</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-yellow-700 font-semibold text-base hover:text-yellow-900 transition-colors">
+                                            หาดป่าตอง
+                                        </h4>
+                                        <p class="text-gray-600 text-sm mt-1">🏖️ หาด • ⭐ 4.5 (8,234)</p>
+                                        <p class="text-gray-500 text-xs mt-1">📍 ภูเก็ต</p>
+                                        <div class="flex items-center mt-2 space-x-2">
+                                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">ทะเล</span>
+                                            <span class="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">นักท่องเที่ยว</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Load More Button -->
+                            <div class="text-center pt-4 border-t border-gray-100">
+                                <button class="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center justify-center space-x-2 mx-auto transition-colors">
+                                    <span>โหลดเพิ่มเติม</span>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Map Area -->
+   
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Government Footer -->
+    <footer class="bg-gradient-to-r from-gray-800 to-gray-900 text-white py-12 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+         
+        </div>
+    </footer>
+
+    <script>
+        // Enhanced Mobile menu functionality
+        const mobileMenuBtn = document.getElementById('sidebar-toggle');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarClose = document.getElementById('sidebar-close');
+
+        mobileMenuBtn?.addEventListener('click', () => {
+            mobileMenu?.classList.toggle('open');
+        });
+
+        sidebarClose?.addEventListener('click', () => {
+            mobileMenu?.classList.remove('open');
+        });
+
+        // Enhanced Tab switching
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => {
+                    b.classList.remove('bg-blue-500', 'text-white');
+                    b.classList.add('text-gray-600');
+                });
+                
+                btn.classList.add('bg-blue-500', 'text-white');
+                btn.classList.remove('text-gray-600');
+            });
+        });
+
+        // Enhanced Attraction card interactions
+        const attractionCards = document.querySelectorAll('.attraction-card');
+        attractionCards.forEach(card => {
+            card.addEventListener('click', () => {
+                attractionCards.forEach(c => {
+                    c.classList.remove('ring-2', 'ring-blue-500', 'shadow-lg');
+                });
+                
+                card.classList.add('ring-2', 'ring-blue-500', 'shadow-lg');
+            });
+        });
+
+        // Leaf marker interactions with info cards
+        const leafMarkers = document.querySelectorAll('.leaf-marker');
+        const infoCard = document.getElementById('info-card');
+        
+        const attractionData = {
+            'เชียงใหม่': {
+                title: 'วัดพระธาตุดอยสุเทพ',
+                location: 'เชียงใหม่',
+                type: '⛩️ วัดพระธาตุ',
+                image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=80&h=80&fit=crop&crop=center',
+                rating: '⭐ 4.9',
+                visitors: '5,678 คน'
+            },
+            'กรุงเทพฯ': {
+                title: 'พระราชวังเก่า',
+                location: 'กรุงเทพมหานคร',
+                type: '🏛️ พระราชวัง',
+                image: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=80&h=80&fit=crop&crop=center',
+                rating: '⭐ 4.8',
+                visitors: '2,341 คน'
+            },
+            'ภูเก็ต': {
+                title: 'หาดป่าตอง',
+                location: 'ภูเก็ต',
+                type: '🏖️ หาด',
+                image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=80&h=80&fit=crop&crop=center',
+                rating: '⭐ 4.5',
+                visitors: '8,234 คน'
+            },
+            'นครราชสีมา': {
+                title: 'อุทยานแห่งชาติเขาใหญ่',
+                location: 'นครราชสีมา',
+                type: '🏞️ อุทยานแห่งชาติ',
+                image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=80&h=80&fit=crop&crop=center',
+                rating: '⭐ 4.7',
+                visitors: '3,892 คน'
+            }
+        };
+
+        leafMarkers.forEach(marker => {
+            marker.addEventListener('mouseenter', (e) => {
+                const location = e.target.getAttribute('data-info');
+                const data = attractionData[location];
+                
+                if (data && infoCard) {
+                    document.getElementById('info-title').textContent = data.title;
+                    document.getElementById('info-location').textContent = data.location;
+                    document.getElementById('info-type').textContent = data.type;
+                    document.getElementById('info-image').src = data.image;
+                    document.getElementById('info-rating').textContent = data.rating;
+                    document.getElementById('info-visitors').textContent = data.visitors;
+                    
+                    infoCard.classList.remove('hidden');
+                }
+            });
+
+            marker.addEventListener('mouseleave', () => {
+                if (infoCard) {
+                    infoCard.classList.add('hidden');
+                }
+            });
+
+            marker.addEventListener('click', (e) => {
+                marker.style.transform += ' scale(1.5)';
+                setTimeout(() => {
+                    marker.style.transform = marker.style.transform.replace(' scale(1.5)', '');
+                }, 300);
+            });
+        });
+
+        // Smooth scrolling and animations
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add fade-in animation to cards
+            const cards = document.querySelectorAll('.attraction-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+
+        // Search functionality
+        const searchInput = document.querySelector('input[type="text"]');
+        searchInput?.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.attraction-card');
+            
+            cards.forEach(card => {
+                const title = card.querySelector('h4').textContent.toLowerCase();
+                if (title.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

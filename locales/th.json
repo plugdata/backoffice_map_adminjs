@@ -1,0 +1,146 @@
+{
+  "messages": {
+    "bulkDeleteTitle": "ลบหลายรายการ",
+    "confirmBulkDelete": "คุณแน่ใจหรือไม่ว่าต้องการลบรายการที่เลือก?",
+    "confirmDelete": "คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?",
+    "error": "เกิดข้อผิดพลาด",
+    "errorLoading": "เกิดข้อผิดพลาดในการโหลดข้อมูล",
+    "loading": "กำลังโหลด",
+    "loginWelcome": "เข้าสู่ระบบในฐานะผู้ดูแลระบบ",
+    "noData": "ไม่มีข้อมูล",
+    "noDataAvailable": "ไม่มีข้อมูลที่แสดง",
+    "noRecordsSelected": "กรุณาเลือกรายการก่อนทำการลบ",
+    "noRecords": "ไม่มีรายการ",
+    "noRecordsInResource": "ไม่มีรายการในทรัพยากรนี้",
+    "success": "สำเร็จ",
+    "welcomeOnBoard_title": "ยินดีต้อนรับสู่แดชบอร์ด",
+    "pageNotFound_title": "ไม่พบหน้าที่คุณต้องการ",
+    "error404Action": "เกิดข้อผิดพลาด 404",
+    "theseRecordsWillBeRemoved_plural": "รายการเหล่านี้จะถูกลบทั้งหมด", "addingResources_title": "เพิ่มทรัพยากร",
+    "addingResources_subtitle": "เพิ่มโมเดลหรือข้อมูลใหม่ในระบบ",
+    "customizeResources_title": "ปรับแต่งทรัพยากร",
+    "customizeResources_subtitle": "ปรับแต่งรายการและการแสดงผลของทรัพยากร",
+    "customizeActions_title": "ปรับแต่งการกระทำ",
+    "customizeActions_subtitle": "สร้างหรือเปลี่ยนแปลง action ต่างๆ ได้ตามต้องการ",
+    "writeOwnComponents_title": "เขียนคอมโพเนนต์เอง",
+    "writeOwnComponents_subtitle": "สร้างอินเทอร์เฟซของคุณเองโดยใช้ React",
+    "customDashboard_title": "แดชบอร์ดแบบกำหนดเอง",
+    "customDashboard_subtitle": "สร้างหน้าหลักของระบบในแบบที่คุณต้องการ",
+    "roleBasedAccess_title": "ระบบสิทธิ์ตามบทบาท",
+    "roleBasedAccess_subtitle": "กำหนดการเข้าถึงตามสิทธิ์ของผู้ใช้",
+    "needMoreSolutions_title": "ต้องการโซลูชันเพิ่มเติม?",
+    "needMoreSolutions_subtitle": "ทีมงานเรายินดีช่วยออกแบบให้คุณ",
+    "community_title": "เข้าร่วมชุมชน",
+    "community_subtitle": "พูดคุย แลกเปลี่ยน ปรึกษา กับผู้พัฒนาคนอื่น",
+    "foundBug_title": "พบข้อผิดพลาด?",
+    "foundBug_subtitle": "แจ้งปัญหาให้เราทราบ เพื่อปรับปรุง",
+    "welcomeOnBoard_subtitle": "เริ่มต้นใช้งาน AdminJS ได้เลย!",
+    "theseRecordsWillBeRemoved": "รายการเหล่านี้จะถูกลบออก",
+       "invalidCredentials": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
+  },
+
+  "actions": {
+    "bulkDelete": "ลบหลายรายการ",
+    "delete": "ลบ",
+    "edit": "แก้ไข",
+    "list": "รายการทั้งหมด",
+    "new": "สร้างใหม่",
+    "show": "แสดงรายละเอียด"
+  },
+
+  "buttons": {
+    "applyChanges": "ใช้การเปลี่ยนแปลง",
+    "cancel": "ยกเลิก",
+    "comfrim": "ยืนยัน",
+    "createFirstRecord": "สร้างรายการแรก",
+    "filter": "ค้นหาข้อมูล",
+    "resetFilter": "ล้างตัวกรอง",
+    "resetPassword": "รีเซ็ตรหัสผ่าน",
+    "save": "บันทึก",
+     "confirmRemovalMany_plural": "ยืนยันการลบหลายรายการ",
+     "successfullyCreated": "สร้างสำเร็จ",
+     "confirm": "ยืนยันการลบ",
+     "confirmRemovalMany": "ยืนยันการลบหลายรายการ",
+    "contactUs": "ติดต่อเรา"
+  },
+
+  "labels": {
+   
+    "confirm":"ยืนยันการลบ",
+    "BuildingControl": "งานควบคุมอาคาร",
+    "RiskZone": "งานระวังที่สาธารณะ",
+    "User": "ผู้ใช้งาน",
+    "dashboard": "แดชบอร์ด",
+    "filters": "ตัวกรอง",
+    "Group": "กลุ่มงานโครงการ",
+    "navigation": "เมนูหลัก",
+    "prisma": "Prisma",
+    "Point": "ตำแหน่งที่ตั้ง",
+    "Setting": "การตั้งค่า",
+    "ZoningPlan": "แผนผังเมือง",
+    "ProjectGroup": "บันทึกชื่อกลุ่มของโครงการ",
+    "ConstructionProject": "อัพโหลดไฟล์โครงการก่อสร้าง",
+    "FileAttachment": "ไฟล์เอกสารแนบโครงการต่อเนื่อง",
+    "FiscalYear": "ปีงบประมาณ",
+    "selectedRecords": "รายการที่เลือกไว้ ({{selected}} รายการ)"
+  },
+
+  "properties": {
+    "username": "ชื่อผู้ใช้งาน",
+    "User": "ผู้ใช้งาน",
+    "password": "รหัสผ่าน",
+    "fullName": "ชื่อ-นามสกุล",
+    "address": "ที่อยู่",
+    "email": "อีเมล",
+    "phone": "เบอร์โทรศัพท์",
+    "role": "บทบาทผู้ใช้",
+    "createdAt": "วันที่สร้าง",
+    "year": "ปี พศ",
+    "name": "ชื่อโครงการ",
+    "status": "สถานะโครงการ",
+    "Id": "ปีงบประมาณ",
+    "groupId": "กลุ่มโครงการ",
+    "documents": "เอกสารแนบ",
+    "fiscalYear": "ปีงบประมาณ",
+    "Group": "ชื่อกลุ่มงาน",
+    "title": "ชื่อกลุ่มโครงการ",
+    "subgroup": "หมวดย่อย",
+  
+    "buildingType": "ประเภทอาคาร",
+    "applicantName": "ชื่อผู้ยื่นคำขอ",
+
+  
+    "zoneType": "ประเภทพื้นที่",
+    "description": "คำอธิบายเพิ่มเติม",
+  
+   
+    "id": "รหัส",
+    "areaName": "ชื่อพื้นที่",
+    "notes": "หมายเหตุ",
+
+   
+    "filename": "ชื่อไฟล์",
+    "filetype": "ประเภทไฟล์",
+    "filepath": "ที่อยู่ไฟล์",
+    "uploadedAt": "วันที่อัปโหลด"
+
+  },
+
+  "components": {
+    "LanguageSelector": {
+      "availableLanguages": {
+        "en": "อังกฤษ",
+        "th": "ไทย"
+      }
+    },
+    "Login": {
+      "loginButton": "เข้าสู่ระบบ",
+      "properties": {
+        "email": "อีเมล",
+        "password": "รหัสผ่าน"
+      },
+      "welcomeHeader": "ยินดีต้อนรับสู่การเข้าสู่ระบบ",
+      "welcomeMessage": "กรุณาเข้าสู่ระบบเพื่อเข้าถึงระบบ"
+    }
+  }
+}
