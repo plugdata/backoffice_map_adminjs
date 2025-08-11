@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,110 +10,286 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ========================================
+// User Management
+// ========================================
+
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  password  String
-  fullName  String
-  address   String?
-  email     String?  @unique
-  phone     String?
-  role      String   // เช่น admin, officer, viewer
+  id          String   @id @default(cuid())
+  email       String   @unique
+  username    String   @unique
+  password    String
+  firstName   String
+  lastName    String
+  employeeId  String?  @unique
+  departmentId String?
+  isActive    Boolean  @default(true)
+  lastLoginAt DateTime?
+  
+  // Relations
+  roles       UserRole[]
+  documents   Document[] @relation("DocumentCreator")
+  approvals   DocumentApproval[]
+  notifications Notification[]
+  documentHistory DocumentHistory[] @relation("DocumentHistoryUser")
+  department  Department? @relation(fields: [departmentId], references: [id])
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("users")
+}
+
+// ========================================
+// Role & Permission System
+// ========================================
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  
+  // Relations
+  permissions RolePermission[]
+  users       UserRole[]
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  resource    String   // e.g., "document", "user", "role"
+  action      String   // e.g., "create", "read", "update", "delete"
+  isActive    Boolean  @default(true)
+  
+  // Relations
+  roles       RolePermission[]
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("permissions")
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  roleId String
+  
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
   createdAt DateTime @default(now())
 
+  @@unique([userId, roleId])
+  @@map("user_roles")
 }
 
-model FiscalYear {
-  id        Int      @id @default(autoincrement())
-  year      Int      // เช่น 2568
+model RolePermission {
+  id           String @id @default(cuid())
+  roleId       String
+  permissionId String
+  
+  // Relations
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ========================================
+// Document Management System
+// ========================================
+
+model DocumentType {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  
+  // Relations
+  documents   Document[]
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("document_types")
+}
+
+model ConfidentialityLevel {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  
+  // Relations
+  documents   Document[]
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("confidentiality_levels")
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  managerId   String?
+  isActive    Boolean  @default(true)
+  
+  // Relations
+  documents   Document[]
+  employees   User[]
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("departments")
+}
+
+model Document {
+  id                  String   @id @default(cuid())
+  documentCode        String   @unique
+  documentTypeId      String
+  projectName         String
+  details             String?
+  confidentialityLevelId String
+  departmentId        String
+  status              DocumentStatus @default(PENDING_HR_REVIEW)
+  rejectionReason     String?
+  
+  // File information
+  fileName            String?
+  fileSize            Int?
+  mimeType            String?
+  filePath            String?
+  
+  // Relations
+  creatorId           String
+  creator             User @relation("DocumentCreator", fields: [creatorId], references: [id])
+  documentType        DocumentType @relation(fields: [documentTypeId], references: [id])
+  confidentialityLevel ConfidentialityLevel @relation(fields: [confidentialityLevelId], references: [id])
+  department          Department @relation(fields: [departmentId], references: [id])
+  approvals           DocumentApproval[]
+  notifications       Notification[]
+  history             DocumentHistory[]
+  
+  // Timestamps
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("documents")
+}
+
+model DocumentApproval {
+  id         String   @id @default(cuid())
+  documentId String
+  approverId String
+  status     ApprovalStatus @default(PENDING)
+  comments   String?
+  
+  // Relations
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  approver   User     @relation(fields: [approverId], references: [id])
+  
+  // Timestamps
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("document_approvals")
+}
+
+model DocumentHistory {
+  id         String   @id @default(cuid())
+  documentId String
+  actionBy   String
+  action     String   // e.g., "ส่งเอกสาร", "ตรวจสอบ", "อนุมัติ", "ไม่อนุมัติ"
+  remark     String?
+  
+  // Relations
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User     @relation("DocumentHistoryUser", fields: [actionBy], references: [id])
+  
+  // Timestamps
+  actionDate DateTime @default(now())
+
+  @@map("document_history")
+}
+
+// ========================================
+// Notification System
+// ========================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  metadata  Json?            // Additional data for the notification
+  
+  // Relations
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document  Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId String?
+  
+  // Timestamps
   createdAt DateTime @default(now())
+  readAt    DateTime?
 
-  constructionProjects ConstructionProject[]
-  buildingControls      BuildingControl[]
-  riskZones             RiskZone[]
-  zoningPlans           ZoningPlan[]
+  @@map("notifications")
 }
 
+// ========================================
+// Enums
+// ========================================
 
-model ConstructionProject {
-  id            Int             @id @default(autoincrement())
-  name          String
-  status        String          // pending, approved, etc.
-  key          String          // รหัสโครงการ เช่น 2568-001
-  filePath  String?   // ✅ จำเป็น - ไฟล์จะถูกโหลดผ่าน path นี้
-  filename  String?   // ✅ จำเป็น - แสดงชื่อไฟล์ที่อัปโหลด
-  size      Int?      // ✅ จำเป็น - ตรวจสอบขนาด/แสดงผล
-  mime      String?  // ✅ ควรมี - ระบุชนิดไฟล์
-  comment       String?       // ความเห็นของเจ้าหน้าที่
-  latitude      Float?         // พิกัดละติจูดสำหรับแผนที่
-  longitude     Float?         // พิกัดลองจิจูดสำหรับแผนที่
-  fiscalYearId  Int
-  fiscalYear    FiscalYear      @relation(fields: [fiscalYearId], references: [id])
-  documents     FileAttachment[]
-
-  groupId       Int
-  group         ProjectGroup    @relation(fields: [groupId], references: [id])
-
-  createdAt     DateTime        @default(now())
+enum DocumentStatus {
+  PENDING_HR_REVIEW    // รอตรวจสอบ HR
+  PENDING_CEO_APPROVAL // รออนุมัติ CEO
+  APPROVED             // อนุมัติแล้ว
+  REJECTED_HR          // ไม่อนุมัติ (HR)
+  REJECTED_CEO         // ไม่อนุมัติ (CEO)
+  DRAFT                // ร่าง
+  ARCHIVED             // เก็บถาวร
 }
 
-model ProjectGroup {
-  id        Int       @id @default(autoincrement())
-  title     String    // เช่น "โครงการที่เสนอเข้าแผนพัฒนา"
-  subgroup  String       // เช่น 1, 2, 3
-  projects  ConstructionProject[]
-
-  createdAt DateTime  @default(now())
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
-model BuildingControl {
-  id            Int       @id @default(autoincrement())
-  buildingType  String     // ม.32, มีใบประกันภัย ฯลฯ
-  applicantName String
-  fiscalYearId  Int
-  fiscalYear    FiscalYear @relation(fields: [fiscalYearId], references: [id])
-  documents     FileAttachment[]
-
-  createdAt     DateTime   @default(now())
-}
-
-model RiskZone {
-  id            Int       @id @default(autoincrement())
-  zoneType      String     // เสาสาธารณะ, พื้นที่ป่า ฯลฯ
-  description   String?
-  fiscalYearId  Int
-  fiscalYear    FiscalYear @relation(fields: [fiscalYearId], references: [id])
-  documents     FileAttachment[]
-
-  createdAt     DateTime   @default(now())
-}
-
-model ZoningPlan {
-  id            Int       @id @default(autoincrement())
-  areaName      String
-  notes         String?
-  fiscalYearId  Int
-  fiscalYear    FiscalYear @relation(fields: [fiscalYearId], references: [id])
-  documents     FileAttachment[]
-
-  createdAt     DateTime   @default(now())
-}
-
-model FileAttachment {
-  id             Int       @id @default(autoincrement())
-  filename       String
-  filetype       String     // pdf, jpg, dwg ฯลฯ
-  filepath       String     // ที่อยู่ไฟล์ในระบบ (เช่น /uploads/2568/projectA/file1.pdf)
-  uploadedAt     DateTime   @default(now())
-
-  // optional foreign keys
-  constructionProjectId Int? 
-  buildingControlId     Int?
-  riskZoneId            Int?
-  zoningPlanId          Int?
-
-  constructionProject ConstructionProject? @relation(fields: [constructionProjectId], references: [id])
-  buildingControl     BuildingControl?     @relation(fields: [buildingControlId], references: [id])
-  riskZone            RiskZone?            @relation(fields: [riskZoneId], references: [id])
-  zoningPlan          ZoningPlan?          @relation(fields: [zoningPlanId], references: [id])
-}
+enum NotificationType {
+  DOCUMENT_SUBMITTED
+  DOCUMENT_HR_REVIEWED
+  DOCUMENT_CEO_APPROVED
+  DOCUMENT_REJECTED
+  DOCUMENT_STATUS_CHANGED
+  SYSTEM_MESSAGE
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+} 

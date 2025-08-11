@@ -3,6 +3,10 @@
 // จัดการการเริ่มต้นเซิร์ฟเวอร์และเชื่อมต่อส่วนต่างๆ
 // ========================================
 
+// Load environment variables
+import dotenv from 'dotenv'
+dotenv.config()
+
 // Import configurations
 import express from 'express'
 import path from 'path'
@@ -25,6 +29,8 @@ const __dirname = path.dirname(__filename)
 
 const initializeApp = async () => {
   try {
+    console.log('🚀 Starting Global AdminJS Application...')
+    
     // สร้าง Express app
     const app = createExpressApp()
     
@@ -32,7 +38,7 @@ const initializeApp = async () => {
     const prisma = createPrismaClient()
     
     // ตั้งค่า static files
-    setupStaticFiles(app)
+    await setupStaticFiles(app)
     
     // ตั้งค่า API routes
     app.use('/api', apiRoutes)
@@ -66,6 +72,7 @@ const initializeApp = async () => {
     console.log('🎉 Application started successfully!')
     console.log(`📊 Admin Panel: http://localhost:${PORT}/admin`)
     console.log(`🔗 API Base URL: http://localhost:${PORT}/api`)
+    console.log(`🌐 Main Site: http://localhost:${PORT}`)
     
   } catch (error) {
     console.error('❌ Failed to initialize application:', error)

@@ -6,7 +6,6 @@ import { getModelByName } from '@adminjs/prisma'
 import uploadFeature from '@adminjs/upload'
 import { componentLoader } from '../utils/loder.js'
 import options, { language } from '../utils/setadmin.js'
-import leafletFeatures from '@adminjs/leaflet'
 
 // ตั้งค่าการอัปโหลดไฟล์สำหรับ local storage
 const localProvider = {
@@ -16,172 +15,396 @@ const localProvider = {
   },
 }
 
-// ฟังก์ชัน resource สำหรับโครงการก่อสร้าง
-export const createConstructionProjectResource = (prisma) => ({
-  resource: { model: getModelByName('ConstructionProject'), client: prisma },
-  options: {
-    navigation: {
-      name: 'ฝ่ายควบคุมการสร้าง',
-      icon: 'Cast',
-    },
-    properties: {
-      id: { isVisible: false },
-      comment: {
-        type: 'textarea',
-        isVisible: { list: true, edit: true, show: true, filter: false },
-      },
-      latitude: {
-        isVisible: { list: false, edit: true, show: true, filter: false },
-        type: 'number',
-      },
-      longitude: {
-        isVisible: { list: false, edit: true, show: true, filter: false },
-        type: 'number',
-      },
-      location: {
-        isVisible: { list: false, edit: true, show: true, filter: false },
-        custom: {
-          clearButton: true,
-        },
-      },
-      createdAt: {
-        isVisible: { list: true, edit: true, show: true, filter: true },
-      },
-    },
-    actions: {
-      new: { isAccessible: true },
-      edit: { isAccessible: true },
-      delete: { isAccessible: true },
-      bulkDelete: { isAccessible: true },
-    },
-  },
-  features: [
-    uploadFeature({
-      provider: { local: localProvider },
-      properties: {
-        key: 'key',
-        filePath: 'filePath',
-        filename: 'filename',
-        mimeType: 'mime',
-        size: 'size',
-      },
-      uploadPath: (record, filename) => {
-        const id = record?.params?.id || 'temp'
-        return `construction/${id}/${filename}`
-      },
-      validation: {
-        mimeTypes: ['application/pdf', 'image/png', 'image/jpeg'],
-      },
-      componentLoader,
-    }),
-    leafletFeatures.leafletSingleMarkerMapFeature({
-      componentLoader,
-      paths: {
-        mapProperty: 'location',
-        latitudeProperty: 'latitude',
-        longitudeProperty: 'longitude',
-      },
-      mapProps: {
-        center: [13.7563, 100.5018], // กรุงเทพมหานคร
-        zoom: 10,
-        style: { height: '400px' },
-        zoomControl: true,
-        scrollWheelZoom: true,
-        doubleClickZoom: true,
-      },
-      markerProps: {
-        draggable: true,
-        popup: {
-          content: (record) => `
-            <div style="text-align: center; min-width: 200px;">
-              <h4 style="margin: 0 0 10px 0;">${record.params?.name || 'โครงการก่อสร้าง'}</h4>
-              <p style="margin: 5px 0;">ละติจูด: ${record.params?.latitude || 'ไม่ระบุ'}</p>
-              <p style="margin: 5px 0;">ลองจิจูด: ${record.params?.longitude || 'ไม่ระบุ'}</p>
-            </div>
-          `,
-        },
-      },
-    }),
-  ],
-})
-
 // ฟังก์ชันรวม resource ทั้งหมด
 export const createAdminResources = (prisma) => {
-  const ConstructionProjectResource = createConstructionProjectResource(prisma)
   return [
+        // setting 
+        {
+          resource: { model: getModelByName('Department'), client: prisma },
+          options: {
+            navigation: {
+              name: 'ตั้งค่า',
+              icon: 'Data',
+            },
+            properties: {
+              id: { isVisible: false },
+              description: {
+                type: 'textarea',
+                isVisible: { list: false, edit: true, show: true, filter: false },
+              },
+              isActive: {
+                isVisible: { list: true, show: true, edit: true, filter: true }
+              },
+              createdAt: {
+                isVisible: { list: true, show: true, edit: false, filter: true }
+              },
+              updatedAt: {
+                isVisible: { list: false, show: true, edit: false, filter: false }
+              }
+            },
+            actions: {
+              new: { isAccessible: true },
+              edit: { isAccessible: true },
+              delete: { isAccessible: true },
+              bulkDelete: { isAccessible: true },
+            },
+          },
+        },
+    // User Management
     {
       resource: { model: getModelByName('User'), client: prisma },
       options: {
         navigation: {
-          name: 'ตั้งค่า',
-          icon: 'Clipboard',
+          name: 'ผู้ใช้และสิทธิ์',
+          icon: 'User',
         },
         properties: {
           id: { isVisible: false },
-          password: { type: 'password' },
+          password: { 
+            type: 'password',
+            isVisible: { list: false, show: false, edit: true, filter: false }
+          },
+          employeeId: {
+            isVisible: { list: true, show: true, edit: true, filter: true }
+          },
+          departmentId: {
+            isVisible: { list: true, show: true, edit: true, filter: true }
+          },
+          isActive: {
+            isVisible: { list: true, show: true, edit: true, filter: true }
+          },
+          lastLoginAt: {
+            isVisible: { list: true, show: true, edit: false, filter: true }
+          },
+          createdAt: {
+            isVisible: { list: true, show: true, edit: false, filter: true }
+          },
+          updatedAt: {
+            isVisible: { list: false, show: true, edit: false, filter: false }
+          }
+        },
+        actions: {
+          new: { isAccessible: true },
+          edit: { isAccessible: true },
+          delete: { isAccessible: true },
+          bulkDelete: { isAccessible: true },
         },
       },
     },
+
+    // Document Type Management
     {
-      resource: { model: getModelByName('FiscalYear'), client: prisma },
+      resource: { model: getModelByName('DocumentType'), client: prisma },
       options: {
         navigation: {
           name: 'ตั้งค่า',
-          icon: 'Clipboard',
-        },
-        listProperties: ['year', 'createdAt'],
-        sort: { sortBy: 'year', direction: 'desc' },
-        properties: {
-          year: { isTitle: true },
-        },
-      },
-    },
-    {
-      resource: { model: getModelByName('ProjectGroup'), client: prisma },
-      options: {
-        navigation: {
-          name: 'ฝ่ายควบคุมการสร้าง',
-          icon: 'Cast',
+          icon: 'Data',
         },
         properties: {
           id: { isVisible: false },
+          description: {
+            type: 'textarea',
+            isVisible: { list: false, edit: true, show: true, filter: false },
+          },
+          isActive: {
+            isVisible: { list: true, show: true, edit: true, filter: true }
+          },
+          createdAt: {
+            isVisible: { list: true, show: true, edit: false, filter: true }
+          },
+          updatedAt: {
+            isVisible: { list: false, show: true, edit: false, filter: false }
+          }
+        },
+        actions: {
+          new: { isAccessible: true },
+          edit: { isAccessible: true },
+          delete: { isAccessible: true },
+          bulkDelete: { isAccessible: true },
         },
       },
     },
-    ConstructionProjectResource,
-    {  
-      resource: { model: getModelByName('BuildingControl'), client: prisma },
-      options: {
-        navigation: {
-          name: 'ฝ่ายควบคุมอาคาร',
-          icon: 'Home',
-        },
-      },
-    },
+
+    // Confidentiality Level Management
     {
-      resource: { model: getModelByName('RiskZone'), client: prisma },
+      resource: { model: getModelByName('ConfidentialityLevel'), client: prisma },
       options: {
         navigation: {
-          name: 'ฝ่ายควบคุมอาคาร',
-          icon: 'Home',
+          name: 'ตั้งค่า',
+          icon: 'Data',
+        },
+        properties: {
+          id: { isVisible: false },
+          description: {
+            type: 'textarea',
+            isVisible: { list: false, edit: true, show: true, filter: false },
+          },
+          isActive: {
+            isVisible: { list: true, show: true, edit: true, filter: true }
+          },
+          createdAt: {
+            isVisible: { list: true, show: true, edit: false, filter: true }
+          },
+          updatedAt: {
+            isVisible: { list: false, show: true, edit: false, filter: false }
+          }
+        },
+        actions: {
+          new: { isAccessible: true },
+          edit: { isAccessible: true },
+          delete: { isAccessible: true },
+          bulkDelete: { isAccessible: true },
         },
       },
     },
+
+    // Role Management
     {
-      resource: { model: getModelByName('ZoningPlan'), client: prisma },
+      resource: { model: getModelByName('Role'), client: prisma },
       options: {
         navigation: {
-          name: 'ฝ่ายควบคุมอาคาร',
-          icon: 'Home',
+          name: 'ผู้ใช้และสิทธิ์',
+          icon: 'User',
+        },
+        properties: {
+          id: { isVisible: false },
+          description: {
+            type: 'textarea',
+            isVisible: { list: false, edit: true, show: true, filter: false },
+          },
+          isActive: {
+            isVisible: { list: true, show: true, edit: true, filter: true }
+          },
+          createdAt: {
+            isVisible: { list: true, show: true, edit: false, filter: true }
+          },
+          updatedAt: {
+            isVisible: { list: false, show: true, edit: false, filter: false }
+          }
+        },
+        actions: {
+          new: { isAccessible: true },
+          edit: { isAccessible: true },
+          delete: { isAccessible: true },
+          bulkDelete: { isAccessible: true },
         },
       },
     },
+
+    // Permission Management
     {
-      resource: { model: getModelByName('FileAttachment'), client: prisma },
+      resource: { model: getModelByName('Permission'), client: prisma },
       options: {
         navigation: {
-          name: null,
+          name: 'ผู้ใช้และสิทธิ์',
+          icon: 'User',
+        },
+        properties: {
+          id: { isVisible: false },
+          description: {
+            type: 'textarea',
+            isVisible: { list: false, edit: true, show: true, filter: false },
+          },
+          resource: {
+            isVisible: { list: true, show: true, edit: true, filter: true }
+          },
+          action: {
+            isVisible: { list: true, show: true, edit: true, filter: true }
+          },
+          isActive: {
+            isVisible: { list: true, show: true, edit: true, filter: true }
+          },
+          createdAt: {
+            isVisible: { list: true, show: true, edit: false, filter: true }
+          },
+          updatedAt: {
+            isVisible: { list: false, show: true, edit: false, filter: false }
+          }
+        },
+        actions: {
+          new: { isAccessible: true },
+          edit: { isAccessible: true },
+          delete: { isAccessible: true },
+          bulkDelete: { isAccessible: true },
+        },
+      },
+    },
+
+    // Document Management
+    {
+      resource: { model: getModelByName('Document'), client: prisma },
+      options: {
+        navigation: {
+          name: 'เอกสาร',
           icon: 'File',
+        },
+        properties: {
+          id: { isVisible: false },
+          documentCode: {
+            isVisible: { list: true, show: true, edit: true, filter: true }
+          },
+          projectName: {
+            isVisible: { list: true, show: true, edit: true, filter: true }
+          },
+          details: {
+            type: 'textarea',
+            isVisible: { list: false, edit: true, show: true, filter: false },
+          },
+          status: {
+            isVisible: { list: true, edit: true, show: true, filter: true },
+          },
+          rejectionReason: {
+            type: 'textarea',
+            isVisible: { list: false, edit: true, show: true, filter: false },
+          },
+          fileName: {
+            isVisible: { list: true, edit: true, show: true, filter: true },
+          },
+          fileSize: {
+            isVisible: { list: true, edit: true, show: true, filter: false },
+          },
+          mimeType: {
+            isVisible: { list: true, edit: true, show: true, filter: true },
+          },
+          filePath: {
+            isVisible: { list: false, edit: true, show: true, filter: false },
+          },
+          createdAt: {
+            isVisible: { list: true, edit: false, show: true, filter: true },
+          },
+          updatedAt: {
+            isVisible: { list: false, edit: false, show: true, filter: false },
+          }
+        },
+        actions: {
+          new: { isAccessible: true },
+          edit: { isAccessible: true },
+          delete: { isAccessible: true },
+          bulkDelete: { isAccessible: true },
+        },
+      },
+      features: [
+        uploadFeature({
+          provider: { local: localProvider },
+          properties: {
+            key: 'filePath',
+            filePath: 'filePath',
+            filename: 'fileName',
+            mimeType: 'mimeType',
+            size: 'fileSize',
+          },
+          uploadPath: (record, filename) => {
+            const id = record?.params?.id || 'temp'
+            return `documents/${id}/${filename}`
+          },
+          validation: {
+            mimeTypes: ['application/pdf', 'image/png', 'image/jpeg', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+            maxSize: 10 * 1024 * 1024, // 10MB
+          },
+          componentLoader,
+        }),
+      ],
+    },
+
+    // Document Approval Management
+    {
+      resource: { model: getModelByName('DocumentApproval'), client: prisma },
+      options: {
+        navigation: {
+          name: 'เอกสาร',
+          icon: 'File',
+        },
+        properties: {
+          id: { isVisible: false },
+          comments: {
+            type: 'textarea',
+            isVisible: { list: true, edit: true, show: true, filter: false },
+          },
+          status: {
+            isVisible: { list: true, edit: true, show: true, filter: true },
+          },
+          createdAt: {
+            isVisible: { list: true, edit: false, show: true, filter: true },
+          },
+          updatedAt: {
+            isVisible: { list: false, edit: false, show: true, filter: false },
+          }
+        },
+        actions: {
+          new: { isAccessible: true },
+          edit: { isAccessible: true },
+          delete: { isAccessible: true },
+          bulkDelete: { isAccessible: true },
+        },
+      },
+    },
+
+    // Document History Management
+    {
+      resource: { model: getModelByName('DocumentHistory'), client: prisma },
+      options: {
+        navigation: {
+          name: 'เอกสาร',
+          icon: 'File',
+        },
+        properties: {
+          id: { isVisible: false },
+          action: {
+            isVisible: { list: true, show: true, edit: true, filter: true },
+          },
+          remark: {
+            type: 'textarea',
+            isVisible: { list: true, edit: true, show: true, filter: false },
+          },
+          actionDate: {
+            isVisible: { list: true, show: true, edit: false, filter: true },
+          }
+        },
+        actions: {
+          new: { isAccessible: true },
+          edit: { isAccessible: true },
+          delete: { isAccessible: true },
+          bulkDelete: { isAccessible: true },
+        },
+      },
+    },
+
+    // Notification Management
+    {
+      resource: { model: getModelByName('Notification'), client: prisma },
+      options: {
+        navigation: {
+          name: 'การแจ้งเตือน',
+          icon: 'Bell',
+        },
+        properties: {
+          id: { isVisible: false },
+          type: {
+            isVisible: { list: true, show: true, edit: true, filter: true },
+          },
+          message: {
+            type: 'textarea',
+            isVisible: { list: true, edit: true, show: true, filter: false },
+          },
+          metadata: {
+            type: 'mixed',
+            isVisible: { list: false, edit: true, show: true, filter: false },
+          },
+          read: {
+            isVisible: { list: true, edit: true, show: true, filter: true },
+          },
+          readAt: {
+            isVisible: { list: true, edit: false, show: true, filter: true },
+          },
+          createdAt: {
+            isVisible: { list: true, edit: false, show: true, filter: true },
+          }
+        },
+        actions: {
+          new: { isAccessible: true },
+          edit: { isAccessible: true },
+          delete: { isAccessible: true },
+          bulkDelete: { isAccessible: true },
         },
       },
     },

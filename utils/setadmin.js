@@ -1,37 +1,49 @@
 import i18next from 'i18next'
 import Backend from 'i18next-fs-backend'
-import LanguageDetector from 'i18next-browser-languagedetector'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url' 
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const thTranslation = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, '../locales/th.json'), 'utf8')
-)
-const thTranslationehg = JSON.parse(
+// Load translation files
+let thTranslation = {}
+let enTranslation = {}
+
+try {
+  thTranslation = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../locales/th.json'), 'utf8')
+  )
+} catch (error) {
+  console.warn('⚠️ Could not load Thai translation file:', error.message)
+}
+
+try {
+  enTranslation = JSON.parse(
     fs.readFileSync(path.resolve(__dirname, '../locales/en.json'), 'utf8')
   )
+} catch (error) {
+  console.warn('⚠️ Could not load English translation file:', error.message)
+}
 
-  const i18n = i18next.createInstance()
+// Initialize i18next
+const i18n = i18next.createInstance()
 
-  await i18n
-    .use(Backend)
-    .use(LanguageDetector)
-    .init({
-      fallbackLng: 'th',
-      backend: { loadPath: './locales/{{lng}}.json' },
-      interpolation: { escapeValue: false },
-    //  returnEmptyString: true,
-    })
+await i18n
+  .use(Backend)
+  .init({
+    fallbackLng: 'th',
+    backend: { loadPath: './locales/{{lng}}.json' },
+    interpolation: { escapeValue: false },
+  })
 
 const language = i18next.language || 'th'
 
+// Custom theme configuration
 const myCustomTheme = {
   id: 'my-vue-theme',
   name: 'Vue Green Theme',
-
   overrides: {
     colors: {
       primary100: '#42b883',
@@ -40,30 +52,28 @@ const myCustomTheme = {
       lightText: '#6b7280',
     },
   },
-
 }
 
-
+// AdminJS options
 const options = {
   locale: {
     language,
     availableLanguages: ['en', 'th'],
     translations: {
       th: thTranslation,
-      en: thTranslationehg
+      en: enTranslation
     }
   },
   branding: {
     companyName: 'แดชบอร์ดผู้ดูแลระบบ',
     logo: '',
-
   },
   defaultTheme: myCustomTheme.id,
   availableThemes: [myCustomTheme],
   
   assets: {
-     styles: [
-      '/pubilc/admin-custom.css',      // ✅ ไฟล์ tailwind CSS ที่กำหนดเอง
+    styles: [
+      '/public/admin-custom.css', // Fixed typo in path
     ], 
   },
 }
