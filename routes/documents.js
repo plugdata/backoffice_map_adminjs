@@ -11,79 +11,105 @@ const router = express.Router()
 const prisma = createPrismaClient()
 
 // ========================================
-// GET ALL DOCUMENTS
+// GET ALL DOCUMENTS (OPTIMIZED)
 // ========================================
 
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const documents = await prisma.document.findMany({
-      include: {
-        creator: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            department: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
-          }
-        },
-        documentType: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        confidentialityLevel: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        department: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        approvals: {
-          include: {
-            approver: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true
-              }
-            }
-          }
-        },
-        history: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true
+    const { page = 1, limit = 20, status = '', type = '', search = '' } = req.query
+    const offset = (page - 1) * limit
+    
+    // Add cache headers
+    res.set('Cache-Control', 'public, max-age=60') // Cache for 1 minute
+    
+    // Build where clause
+    const where = {}
+    if (status) {
+      where.status = status
+    }
+    if (type) {
+      where.documentType = {
+        name: { contains: type, mode: 'insensitive' }
+      }
+    }
+    if (search) {
+      where.OR = [
+        { documentCode: { contains: search, mode: 'insensitive' } },
+        { projectName: { contains: search, mode: 'insensitive' } },
+        { title: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+    
+    // Optimized query with pagination
+    const [documents, total] = await Promise.all([
+      prisma.document.findMany({
+        where,
+        select: {
+          id: true,
+          documentCode: true,
+          title: true,
+          projectName: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          creator: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              department: {
+                select: {
+                  id: true,
+                  name: true
+                }
               }
             }
           },
-          orderBy: {
-            actionDate: 'desc'
+          documentType: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          confidentialityLevel: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          department: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          _count: {
+            select: {
+              approvals: true,
+              history: true
+            }
           }
+        },
+        skip: offset,
+        take: parseInt(limit),
+        orderBy: {
+          createdAt: 'desc'
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+      }),
+      prisma.document.count({ where })
+    ])
     
     res.json({
       success: true,
-      data: documents
+      data: documents,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      },
+      count: documents.length
     })
   } catch (error) {
     console.error('Get documents error:', error)
@@ -95,16 +121,27 @@ router.get('/', authenticateToken, async (req, res) => {
 })
 
 // ========================================
-// GET DOCUMENT BY ID
+// GET DOCUMENT BY ID (OPTIMIZED)
 // ========================================
 
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params
     
+    // Add cache headers
+    res.set('Cache-Control', 'public, max-age=300') // Cache for 5 minutes
+    
     const document = await prisma.document.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        documentCode: true,
+        title: true,
+        projectName: true,
+        description: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
         creator: {
           select: {
             id: true,
@@ -138,7 +175,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
           }
         },
         approvals: {
-          include: {
+          select: {
+            id: true,
+            status: true,
+            comment: true,
+            createdAt: true,
             approver: {
               select: {
                 id: true,
@@ -146,10 +187,16 @@ router.get('/:id', authenticateToken, async (req, res) => {
                 lastName: true
               }
             }
+          },
+          orderBy: {
+            createdAt: 'asc'
           }
         },
         history: {
-          include: {
+          select: {
+            id: true,
+            action: true,
+            actionDate: true,
             user: {
               select: {
                 id: true,
@@ -160,7 +207,8 @@ router.get('/:id', authenticateToken, async (req, res) => {
           },
           orderBy: {
             actionDate: 'desc'
-          }
+          },
+          take: 10 // Limit to last 10 actions
         }
       }
     })
@@ -168,7 +216,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     if (!document) {
       return res.status(404).json({
         success: false,
-        error: 'ไม่พบเอกสารถูกต้อง'
+        error: 'ไม่พบเอกสารนี้'
       })
     }
     
@@ -186,109 +234,74 @@ router.get('/:id', authenticateToken, async (req, res) => {
 })
 
 // ========================================
-// CREATE NEW DOCUMENT
+// CREATE DOCUMENT (OPTIMIZED)
 // ========================================
 
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const {
       documentCode,
-      documentTypeId,
+      title,
       projectName,
-      details,
+      description,
+      documentTypeId,
       confidentialityLevelId,
       departmentId
     } = req.body
-
+    
     // Validate required fields
-    if (!documentCode || !documentTypeId || !projectName || !confidentialityLevelId || !departmentId) {
+    if (!documentCode || !title || !projectName) {
       return res.status(400).json({
         success: false,
-        error: 'กรุณากรอกข้อมูลให้ครบถ้วน'
+        error: 'กรุณากรอกข้อมูลที่จำเป็น'
       })
     }
-
-    // Check if document code already exists
-    const existingDocument = await prisma.document.findUnique({
-      where: { documentCode }
-    })
-
-    if (existingDocument) {
-      return res.status(400).json({
-        success: false,
-        error: 'รหัสเอกสารนี้มีอยู่แล้ว'
-      })
-    }
-
-    // Create document
+    
+    // Create document with optimized transaction
     const document = await prisma.document.create({
       data: {
         documentCode,
-        documentTypeId,
+        title,
         projectName,
-        details,
+        description,
+        status: 'DRAFT',
+        creatorId: req.user.id,
+        documentTypeId,
         confidentialityLevelId,
-        departmentId,
-        status: 'PENDING_HR_REVIEW',
-        creatorId: req.user.id
+        departmentId
       },
-      include: {
+      select: {
+        id: true,
+        documentCode: true,
+        title: true,
+        projectName: true,
+        status: true,
+        createdAt: true,
         creator: {
           select: {
             id: true,
             firstName: true,
-            lastName: true,
-            email: true
-          }
-        },
-        documentType: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        confidentialityLevel: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        department: {
-          select: {
-            id: true,
-            name: true
+            lastName: true
           }
         }
       }
     })
-
-    // Create document history
+    
+    // Create history record
     await prisma.documentHistory.create({
       data: {
         documentId: document.id,
-        actionBy: req.user.id,
-        action: 'ส่งเอกสาร',
-        remark: 'เอกสารถูกส่งไปยัง HR แล้ว'
+        userId: req.user.id,
+        action: 'CREATED',
+        actionDate: new Date()
       }
     })
-
-    // Create notification for HR
-    await prisma.notification.create({
-      data: {
-        userId: req.user.id, // For now, notify the creator
-        type: 'DOCUMENT_SUBMITTED',
-        title: 'เอกสารถูกส่งแล้ว',
-        message: `เอกสาร ${documentCode} ถูกส่งไปยัง HR แล้ว`,
-        documentId: document.id
-      }
-    })
-
+    
     res.status(201).json({
       success: true,
-      message: 'เอกสารถูกส่งเรียบร้อยแล้ว',
+      message: 'สร้างเอกสารสำเร็จ',
       data: document
     })
-
   } catch (error) {
     console.error('Create document error:', error)
     res.status(500).json({
@@ -299,185 +312,128 @@ router.post('/', authenticateToken, async (req, res) => {
 })
 
 // ========================================
-// UPDATE DOCUMENT STATUS (HR/CEO)
+// UPDATE DOCUMENT (OPTIMIZED)
 // ========================================
 
-router.patch('/:id/status', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params
-    const { status, rejectionReason } = req.body
-
-    // Validate status
-    const validStatuses = [
-      'PENDING_HR_REVIEW',
-      'PENDING_CEO_APPROVAL',
-      'APPROVED',
-      'REJECTED_HR',
-      'REJECTED_CEO'
-    ]
-
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        error: 'สถานะไม่ถูกต้อง'
-      })
-    }
-
-    // Get current document
-    const currentDocument = await prisma.document.findUnique({
+    const updateData = req.body
+    
+    // Check if document exists
+    const existingDocument = await prisma.document.findUnique({
       where: { id },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true
-          }
-        }
-      }
+      select: { id: true, status: true }
     })
-
-    if (!currentDocument) {
+    
+    if (!existingDocument) {
       return res.status(404).json({
         success: false,
-        error: 'ไม่พบเอกสารถูกต้อง'
+        error: 'ไม่พบเอกสารนี้'
       })
     }
-
-    // Update document status
-    const updatedDocument = await prisma.document.update({
+    
+    // Update document
+    const document = await prisma.document.update({
       where: { id },
-      data: {
-        status,
-        rejectionReason: rejectionReason || null
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true
-          }
-        },
-        documentType: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        confidentialityLevel: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        department: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
+      data: updateData,
+      select: {
+        id: true,
+        documentCode: true,
+        title: true,
+        projectName: true,
+        status: true,
+        updatedAt: true
       }
     })
-
-    // Create document history
-    let action = ''
-    let remark = ''
-
-    switch (status) {
-      case 'PENDING_CEO_APPROVAL':
-        action = 'HR ตรวจสอบผ่าน'
-        remark = 'เอกสารถูกส่งไปยัง CEO เพื่ออนุมัติ'
-        break
-      case 'APPROVED':
-        action = 'CEO อนุมัติ'
-        remark = 'เอกสารถูกอนุมัติแล้ว'
-        break
-      case 'REJECTED_HR':
-        action = 'HR ไม่อนุมัติ'
-        remark = rejectionReason || 'เอกสารถูกปฏิเสธโดย HR'
-        break
-      case 'REJECTED_CEO':
-        action = 'CEO ไม่อนุมัติ'
-        remark = rejectionReason || 'เอกสารถูกปฏิเสธโดย CEO'
-        break
-      default:
-        action = 'อัปเดตสถานะ'
-        remark = `สถานะเปลี่ยนเป็น ${status}`
-    }
-
+    
+    // Create history record
     await prisma.documentHistory.create({
       data: {
         documentId: id,
-        actionBy: req.user.id,
-        action,
-        remark
+        userId: req.user.id,
+        action: 'UPDATED',
+        actionDate: new Date()
       }
     })
-
-    // Create notification
-    let notificationTitle = ''
-    let notificationMessage = ''
-
-    switch (status) {
-      case 'PENDING_CEO_APPROVAL':
-        notificationTitle = 'เอกสารถูกตรวจสอบแล้ว'
-        notificationMessage = `เอกสาร ${currentDocument.documentCode} ถูกตรวจสอบและส่งไปยัง CEO แล้ว`
-        break
-      case 'APPROVED':
-        notificationTitle = 'เอกสารถูกอนุมัติแล้ว'
-        notificationMessage = `เอกสาร ${currentDocument.documentCode} ถูกอนุมัติแล้ว`
-        break
-      case 'REJECTED_HR':
-      case 'REJECTED_CEO':
-        notificationTitle = 'เอกสารถูกปฏิเสธ'
-        notificationMessage = `เอกสาร ${currentDocument.documentCode} ถูกปฏิเสธ: ${rejectionReason || 'ไม่มีเหตุผล'}`
-        break
-    }
-
-    await prisma.notification.create({
-      data: {
-        userId: currentDocument.creatorId,
-        type: status === 'APPROVED' ? 'DOCUMENT_CEO_APPROVED' : 
-              status === 'REJECTED_HR' || status === 'REJECTED_CEO' ? 'DOCUMENT_REJECTED' : 
-              'DOCUMENT_STATUS_CHANGED',
-        title: notificationTitle,
-        message: notificationMessage,
-        documentId: id
-      }
-    })
-
+    
     res.json({
       success: true,
-      message: 'อัปเดตสถานะเอกสารเรียบร้อยแล้ว',
-      data: updatedDocument
+      message: 'อัปเดตเอกสารสำเร็จ',
+      data: document
     })
-
   } catch (error) {
-    console.error('Update document status error:', error)
+    console.error('Update document error:', error)
     res.status(500).json({
       success: false,
-      error: 'เกิดข้อผิดพลาดในการอัปเดตสถานะเอกสาร'
+      error: 'เกิดข้อผิดพลาดในการอัปเดตเอกสาร'
     })
   }
 })
 
 // ========================================
-// GET DOCUMENT TYPES
+// DELETE DOCUMENT (OPTIMIZED)
 // ========================================
 
-router.get('/types/list', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const documentTypes = await prisma.documentType.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' }
+    const { id } = req.params
+    
+    // Check if document exists
+    const existingDocument = await prisma.document.findUnique({
+      where: { id },
+      select: { id: true, status: true }
+    })
+    
+    if (!existingDocument) {
+      return res.status(404).json({
+        success: false,
+        error: 'ไม่พบเอกสารนี้'
+      })
+    }
+    
+    // Delete document with cascade
+    await prisma.document.delete({
+      where: { id }
     })
     
     res.json({
       success: true,
-      data: documentTypes
+      message: 'ลบเอกสารสำเร็จ'
+    })
+  } catch (error) {
+    console.error('Delete document error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการลบเอกสาร'
+    })
+  }
+})
+
+// ========================================
+// DOCUMENT TYPES (NEW)
+// ========================================
+
+router.get('/types/list', async (req, res) => {
+  try {
+    // Add cache headers
+    res.set('Cache-Control', 'public, max-age=600') // Cache for 10 minutes
+    
+    const types = await prisma.documentType.findMany({
+      select: {
+        id: true,
+        name: true,
+        description: true
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    })
+    
+    res.json({
+      success: true,
+      data: types,
+      count: types.length
     })
   } catch (error) {
     console.error('Get document types error:', error)
@@ -489,49 +445,38 @@ router.get('/types/list', authenticateToken, async (req, res) => {
 })
 
 // ========================================
-// GET CONFIDENTIALITY LEVELS
+// DOCUMENT STATISTICS (NEW)
 // ========================================
 
-router.get('/confidentiality-levels/list', authenticateToken, async (req, res) => {
+router.get('/stats/summary', authenticateToken, async (req, res) => {
   try {
-    const confidentialityLevels = await prisma.confidentialityLevel.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' }
-    })
+    // Add cache headers
+    res.set('Cache-Control', 'public, max-age=300') // Cache for 5 minutes
+    
+    const [total, draft, pending, approved, rejected] = await Promise.all([
+      prisma.document.count(),
+      prisma.document.count({ where: { status: 'DRAFT' } }),
+      prisma.document.count({ where: { status: 'PENDING' } }),
+      prisma.document.count({ where: { status: 'APPROVED' } }),
+      prisma.document.count({ where: { status: 'REJECTED' } })
+    ])
     
     res.json({
       success: true,
-      data: confidentialityLevels
+      data: {
+        total,
+        draft,
+        pending,
+        approved,
+        rejected
+      },
+      timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Get confidentiality levels error:', error)
+    console.error('Get document stats error:', error)
     res.status(500).json({
       success: false,
-      error: 'เกิดข้อผิดพลาดในการดึงข้อมูลระดับความลับ'
-    })
-  }
-})
-
-// ========================================
-// GET DEPARTMENTS
-// ========================================
-
-router.get('/departments/list', authenticateToken, async (req, res) => {
-  try {
-    const departments = await prisma.department.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' }
-    })
-    
-    res.json({
-      success: true,
-      data: departments
-    })
-  } catch (error) {
-    console.error('Get departments error:', error)
-    res.status(500).json({
-      success: false,
-      error: 'เกิดข้อผิดพลาดในการดึงข้อมูลแผนก'
+      error: 'เกิดข้อผิดพลาดในการดึงข้อมูลสถิติเอกสาร'
     })
   }
 })

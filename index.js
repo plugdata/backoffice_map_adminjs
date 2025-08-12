@@ -18,6 +18,9 @@ import AdminJSExpress from '@adminjs/express'
 
 // Import routes
 import apiRoutes from './routes/api.js'
+import authRoutes from './routes/auth.js'
+import dashboardRoutes from './routes/dashboard.js'
+import workflowRoutes from './routes/workflow.js'
 
 // ตั้งค่า __dirname สำหรับ ES modules
 const __filename = fileURLToPath(import.meta.url)
@@ -42,23 +45,79 @@ const initializeApp = async () => {
     
     // ตั้งค่า API routes
     app.use('/api', apiRoutes)
+    app.use('/api/auth', authRoutes)
+    app.use('/api/dashboard', dashboardRoutes)
+    app.use('/api/workflow', workflowRoutes)
     
     // ตั้งค่า static files สำหรับ www folder
     app.use('/www', express.static('www'))
     
-    // ตั้งค่า route สำหรับ index
+    // ตั้งค่า static files สำหรับ public folder
+    app.use('/public', express.static('public'))
+    
+    // API-only routes - ไม่มี HTML files
     app.get('/', (req, res) => {
-      res.sendFile(path.join(__dirname, 'www', 'index.html'))
+      res.json({
+        success: true,
+        message: 'Global AdminJS API Server',
+        version: '1.0.0',
+        endpoints: {
+          admin: '/admin',
+          api: '/api',
+          auth: '/api/auth',
+          health: '/api/health',
+          users: '/api/users',
+          documents: '/api/documents'
+        },
+        timestamp: new Date().toISOString()
+      })
     })
     
     app.get('/index', (req, res) => {
-      res.sendFile(path.join(__dirname, 'www', 'index.html'))
+      res.json({
+        success: true,
+        message: 'Global AdminJS API Server',
+        version: '1.0.0',
+        endpoints: {
+          admin: '/admin',
+          api: '/api',
+          auth: '/api/auth',
+          health: '/api/health',
+          users: '/api/users',
+          documents: '/api/documents'
+        },
+        timestamp: new Date().toISOString()
+      })
     })
+    
+    // API-only dashboard endpoint
+/*     app.get('/dashboard', (req, res) => {
+      res.json({
+        success: true,
+        message: 'DocFlow Dashboard API',
+        version: '1.0.0',
+        endpoints: {
+          documents: '/api/documents',
+          users: '/api/users',
+          notifications: '/api/notifications',
+          roles: '/api/roles'
+        },
+        timestamp: new Date().toISOString()
+      })
+    }) */
     
     // สร้าง AdminJS instance
     const admin = createAdminJS(prisma)
     
-    // ตั้งค่า AdminJS router
+    // ตั้งค่า AdminJS router พร้อม authentication
+    const { getAuthConfig, getSessionConfig } = await import('./middleware/adminAuth.js')
+    
+/*     const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
+      admin,
+      getAuthConfig(),
+      null,
+      getSessionConfig()
+    ) */
     const adminRouter = AdminJSExpress.buildRouter(admin)
     app.use(admin.options.rootPath, adminRouter)
     

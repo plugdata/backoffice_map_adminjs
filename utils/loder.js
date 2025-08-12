@@ -16,7 +16,8 @@ const addComponent = (id, relativePath) => {
 }
 
 // ✅ เพิ่ม Component ที่ต้องใช้
-// ไม่มี components ที่ต้องใช้ในขณะนี้
+addComponent('Dashboard', '../src/page/dashboard.jsx')
+addComponent('notification', '../src/page/listnotification.jsx')
 
 
 // ✅ export ทั้ง loader และฟังก์ชันเสริม

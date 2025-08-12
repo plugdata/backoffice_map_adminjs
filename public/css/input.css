@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for AdminJS */
+@layer components {
+  .admin-button {
+    @apply px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200;
+  }
+  
+  .admin-card {
+    @apply bg-white rounded-lg shadow-md p-6 border border-gray-200;
+  }
+  
+  .admin-input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+  
+  .admin-table {
+    @apply w-full border-collapse border border-gray-300;
+  }
+  
+  .admin-table th {
+    @apply bg-gray-50 border border-gray-300 px-4 py-2 text-left font-medium text-gray-700;
+  }
+  
+  .admin-table td {
+    @apply border border-gray-300 px-4 py-2 text-gray-900;
+  }
+  
+  .admin-nav {
+    @apply bg-white shadow-sm border-b border-gray-200;
+  }
+  
+  .admin-nav-item {
+    @apply px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors duration-200;
+  }
+  
+  .admin-nav-item.active {
+    @apply text-primary-600 bg-primary-50 border-b-2 border-primary-600;
+  }
+}
+
+/* Custom animations */
+@layer utilities {
+  .fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  .slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+} 

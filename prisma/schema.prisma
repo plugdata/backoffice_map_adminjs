@@ -15,28 +15,34 @@ datasource db {
 // ========================================
 
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  username    String   @unique
-  password    String
-  firstName   String
-  lastName    String
-  employeeId  String?  @unique
-  departmentId String?
-  isActive    Boolean  @default(true)
-  lastLoginAt DateTime?
-  
-  // Relations
-  roles       UserRole[]
-  documents   Document[] @relation("DocumentCreator")
-  approvals   DocumentApproval[]
-  notifications Notification[]
-  documentHistory DocumentHistory[] @relation("DocumentHistoryUser")
-  department  Department? @relation(fields: [departmentId], references: [id])
-  
+  id            String   @id @default(cuid())
+  email         String   @unique
+  username      String   @unique
+  password      String
+  firstName     String
+  lastName      String
+  employeeId    String?  @unique
+  departmentId  String?
+  isActive      Boolean  @default(true)
+  lastLoginAt   DateTime?
+
+  // == Add these ==
+  roleId        String?    // ถ้าอยาก "ต้องมีบทบาทเสมอ" ให้เปลี่ยนเป็น String (ไม่ใส่ ?)
+  role          Role?      @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  // ==============
+
+  // Relations อื่น ๆ ของคุณ
+  documents           Document[]        @relation("DocumentCreator")
+  hrReviewedDocuments Document[]        @relation("DocumentHRReviewer")
+  ceoApprovedDocuments Document[]       @relation("DocumentCEOApprover")
+  approvals           DocumentApproval[]
+  notifications       Notification[]
+  documentHistory     DocumentHistory[] @relation("DocumentHistoryUser")
+  department          Department?       @relation(fields: [departmentId], references: [id])
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@map("users")
 }
@@ -50,11 +56,13 @@ model Role {
   name        String   @unique
   description String?
   isActive    Boolean  @default(true)
+
+  // Users in this role (1:n)
+  users       User[]
   
-  // Relations
-  permissions RolePermission[]
-  users       UserRole[]
-  
+  // Permissions in this role (1:n)
+  permissions Permission[]
+
   // Timestamps
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -66,51 +74,23 @@ model Permission {
   id          String   @id @default(cuid())
   name        String   @unique
   description String?
-  resource    String   // e.g., "document", "user", "role"
-  action      String   // e.g., "create", "read", "update", "delete"
+  resource    String
+  action      String
   isActive    Boolean  @default(true)
-  
-  // Relations
-  roles       RolePermission[]
-  
-  // Timestamps
+
+  // optional: bind to a role (1:n)
+  roleId      String?
+  role        Role?    @relation(fields: [roleId], references: [id], onDelete: SetNull)
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@map("permissions")
 }
 
-model UserRole {
-  id     String @id @default(cuid())
-  userId String
-  roleId String
-  
-  // Relations
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  
-  // Timestamps
-  createdAt DateTime @default(now())
 
-  @@unique([userId, roleId])
-  @@map("user_roles")
-}
 
-model RolePermission {
-  id           String @id @default(cuid())
-  roleId       String
-  permissionId String
-  
-  // Relations
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  
-  // Timestamps
-  createdAt    DateTime @default(now())
 
-  @@unique([roleId, permissionId])
-  @@map("role_permissions")
-}
 
 // ========================================
 // Document Management System
@@ -174,10 +154,14 @@ model Document {
   details             String?
   confidentialityLevelId String
   departmentId        String
-  status              DocumentStatus @default(PENDING_HR_REVIEW)
-  rejectionReason     String?
+  status              DocumentStatus @default(DRAFT)
+  reviewStatus        ReviewStatus @default(PENDING_HR_REVIEW)
+  reviewComments      String?
+  hrReviewerId        String?        // HR ที่ตรวจสอบโครงสร้างเอกสาร
+  ceoApproverId       String?        // CEO ที่อนุมัติเอกสาร
   
   // File information
+  key                 String?        // รหัสโครงการ เช่น 2568-001
   fileName            String?
   fileSize            Int?
   mimeType            String?
@@ -186,6 +170,8 @@ model Document {
   // Relations
   creatorId           String
   creator             User @relation("DocumentCreator", fields: [creatorId], references: [id])
+  hrReviewer          User? @relation("DocumentHRReviewer", fields: [hrReviewerId], references: [id])
+  ceoApprover         User? @relation("DocumentCEOApprover", fields: [ceoApproverId], references: [id])
   documentType        DocumentType @relation(fields: [documentTypeId], references: [id])
   confidentialityLevel ConfidentialityLevel @relation(fields: [confidentialityLevelId], references: [id])
   department          Department @relation(fields: [departmentId], references: [id])
@@ -222,8 +208,10 @@ model DocumentHistory {
   id         String   @id @default(cuid())
   documentId String
   actionBy   String
-  action     String   // e.g., "ส่งเอกสาร", "ตรวจสอบ", "อนุมัติ", "ไม่อนุมัติ"
-  remark     String?
+  action     DocumentActionType  // ประเภทการกระทำ
+  actionDetails String?          // รายละเอียดการกระทำ
+  remark     String?             // หมายเหตุเพิ่มเติม
+  metadata   Json?               // ข้อมูลเพิ่มเติม (เช่น ข้อมูลก่อน/หลังการเปลี่ยนแปลง)
   
   // Relations
   document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
@@ -265,31 +253,64 @@ model Notification {
 // ========================================
 
 enum DocumentStatus {
-  PENDING_HR_REVIEW    // รอตรวจสอบ HR
-  PENDING_CEO_APPROVAL // รออนุมัติ CEO
-  APPROVED             // อนุมัติแล้ว
-  REJECTED_HR          // ไม่อนุมัติ (HR)
-  REJECTED_CEO         // ไม่อนุมัติ (CEO)
   DRAFT                // ร่าง
+  SUBMITTED            // ส่งแล้ว
+  UNDER_REVIEW         // กำลังตรวจสอบ
+  REVIEWED             // ตรวจสอบแล้ว
+  APPROVED             // อนุมัติแล้ว
+  REJECTED             // ไม่อนุมัติ
   ARCHIVED             // เก็บถาวร
 }
 
+enum ReviewStatus {
+  PENDING_HR_REVIEW         // รอ HR ตรวจสอบโครงสร้างเอกสาร
+  HR_REVIEWING              // HR กำลังตรวจสอบโครงสร้างเอกสาร
+  HR_REVIEWED_TO_CEO        // HR ตรวจสอบแล้ว ส่งให้ CEO อนุมัติ
+  PENDING_CEO_APPROVAL      // รอ CEO อนุมัติ
+  CEO_APPROVED              // CEO อนุมัติแล้ว
+  CEO_REJECTED              // CEO ไม่อนุมัติ
+  RETURNED_FOR_REVISION     // ส่งกลับให้แก้ไข
+  NO_REVIEW_NEEDED          // ไม่ต้องตรวจสอบ
+}
+
+enum DocumentActionType {
+  DOCUMENT_CREATED          // สร้างเอกสาร
+  DOCUMENT_UPDATED          // แก้ไขเอกสาร
+  DOCUMENT_SUBMITTED        // ส่งเอกสาร
+  ASSIGNED_HR_REVIEWER      // มอบหมาย HR ตรวจสอบโครงสร้างเอกสาร
+  HR_REVIEW_STARTED         // HR เริ่มตรวจสอบโครงสร้างเอกสาร
+  HR_REVIEW_COMPLETED       // HR ตรวจสอบโครงสร้างเอกสารเสร็จสิ้น
+  SENT_TO_CEO_APPROVAL      // ส่งให้ CEO อนุมัติ
+  CEO_APPROVED              // CEO อนุมัติ
+  CEO_REJECTED              // CEO ไม่อนุมัติ
+  RETURNED_FOR_REVISION     // ส่งกลับแก้ไข
+  DOCUMENT_ARCHIVED         // เก็บถาวร
+  DOCUMENT_RESTORED         // กู้คืน
+  DOCUMENT_DELETED          // ลบ
+  STATUS_CHANGED            // เปลี่ยนสถานะ
+  FILE_UPLOADED             // อัปโหลดไฟล์
+  FILE_REMOVED              // ลบไฟล์
+  COMMENT_ADDED             // เพิ่มความคิดเห็น
+  COMMENT_EDITED            // แก้ไขความคิดเห็น
+  COMMENT_DELETED           // ลบความคิดเห็น
+}
+
 enum ApprovalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  CANCELLED
+  PENDING                   // รออนุมัติ
+  APPROVED                  // อนุมัติแล้ว
+  REJECTED                  // ไม่อนุมัติ
+  CANCELLED                 // ยกเลิก
 }
 
 enum NotificationType {
-  DOCUMENT_SUBMITTED
-  DOCUMENT_HR_REVIEWED
-  DOCUMENT_CEO_APPROVED
-  DOCUMENT_REJECTED
-  DOCUMENT_STATUS_CHANGED
-  SYSTEM_MESSAGE
-  INFO
-  SUCCESS
-  WARNING
-  ERROR
+  DOCUMENT_SUBMITTED        // ส่งเอกสารแล้ว
+  HR_REVIEWED               // HR ตรวจสอบแล้ว
+  CEO_APPROVED              // CEO อนุมัติแล้ว
+  DOCUMENT_REJECTED         // เอกสารถูกปฏิเสธ
+  DOCUMENT_STATUS_CHANGED   // สถานะเอกสารเปลี่ยน
+  SYSTEM_MESSAGE            // ข้อความระบบ
+  INFO                      // ข้อมูล
+  SUCCESS                   // สำเร็จ
+  WARNING                   // เตือน
+  ERROR                     // ข้อผิดพลาด
 } 

@@ -1,6 +1,5 @@
 // ========================================
-// Database Seed Script
-// สร้างข้อมูลเริ่มต้นสำหรับระบบการส่งเอกสาร
+// Seed Data for Role-Based Access Control
 // ========================================
 
 import { PrismaClient } from '@prisma/client'
@@ -8,552 +7,378 @@ import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
-// ========================================
-// SEED DATA
-// ========================================
+async function main() {
+  console.log('🌱 Starting seed...')
 
-const seedData = async () => {
-  try {
-    console.log('🌱 Starting database seeding...')
+  // ========================================
+  // CREATE DEPARTMENTS
+  // ========================================
+  
+  console.log('🏢 Creating departments...')
+  const hrDepartment = await prisma.department.upsert({
+    where: { name: 'HR Department' },
+    update: {},
+    create: {
+      name: 'HR Department',
+      description: 'Human Resources Department'
+    }
+  })
 
-    // ========================================
-    // CREATE DEPARTMENTS
-    // ========================================
+  const itDepartment = await prisma.department.upsert({
+    where: { name: 'IT Department' },
+    update: {},
+    create: {
+      name: 'IT Department',
+      description: 'Information Technology Department'
+    }
+  })
+
+  const financeDepartment = await prisma.department.upsert({
+    where: { name: 'Finance Department' },
+    update: {},
+    create: {
+      name: 'Finance Department',
+      description: 'Finance and Accounting Department'
+    }
+  })
+
+  // ========================================
+  // CREATE PERMISSIONS
+  // ========================================
+  
+  const permissions = [
+    // Document Permissions
+    { name: 'document:create', description: 'สร้างเอกสารใหม่', resource: 'document', action: 'create' },
+    { name: 'document:read', description: 'อ่านเอกสาร', resource: 'document', action: 'read' },
+    { name: 'document:update', description: 'แก้ไขเอกสาร', resource: 'document', action: 'update' },
+    { name: 'document:delete', description: 'ลบเอกสาร', resource: 'document', action: 'delete' },
+    { name: 'document:approve', description: 'อนุมัติเอกสาร', resource: 'document', action: 'approve' },
+    { name: 'document:reject', description: 'ปฏิเสธเอกสาร', resource: 'document', action: 'reject' },
     
-    console.log('🏢 Creating departments...')
-    const hrDepartment = await prisma.department.upsert({
-      where: { name: 'HR Department' },
-      update: {},
-      create: {
-        name: 'HR Department',
-        description: 'Human Resources Department'
-      }
-    })
-
-    const itDepartment = await prisma.department.upsert({
-      where: { name: 'IT Department' },
-      update: {},
-      create: {
-        name: 'IT Department',
-        description: 'Information Technology Department'
-      }
-    })
-
-    const financeDepartment = await prisma.department.upsert({
-      where: { name: 'Finance Department' },
-      update: {},
-      create: {
-        name: 'Finance Department',
-        description: 'Finance and Accounting Department'
-      }
-    })
-
-    // ========================================
-    // CREATE DOCUMENT TYPES
-    // ========================================
+    // User Permissions
+    { name: 'user:create', description: 'สร้างผู้ใช้ใหม่', resource: 'user', action: 'create' },
+    { name: 'user:read', description: 'อ่านข้อมูลผู้ใช้', resource: 'user', action: 'read' },
+    { name: 'user:update', description: 'แก้ไขข้อมูลผู้ใช้', resource: 'user', action: 'update' },
+    { name: 'user:delete', description: 'ลบผู้ใช้', resource: 'user', action: 'delete' },
     
-    console.log('📄 Creating document types...')
-    const documentTypes = await Promise.all([
-      prisma.documentType.upsert({
-        where: { name: 'ใบขออนุมัติซื้อ' },
-        update: {},
-        create: {
-          name: 'ใบขออนุมัติซื้อ',
-          description: 'เอกสารขออนุมัติการซื้อสินค้าหรือบริการ'
-        }
-      }),
-      prisma.documentType.upsert({
-        where: { name: 'ใบเบิกวัสดุ' },
-        update: {},
-        create: {
-          name: 'ใบเบิกวัสดุ',
-          description: 'เอกสารขอเบิกวัสดุสิ้นเปลือง'
-        }
-      }),
-      prisma.documentType.upsert({
-        where: { name: 'ใบลา' },
-        update: {},
-        create: {
-          name: 'ใบลา',
-          description: 'เอกสารขออนุญาตลา'
-        }
-      }),
-      prisma.documentType.upsert({
-        where: { name: 'ใบเสนอโครงการ' },
-        update: {},
-        create: {
-          name: 'ใบเสนอโครงการ',
-          description: 'เอกสารเสนอโครงการใหม่'
-        }
-      })
-    ])
-
-    // ========================================
-    // CREATE CONFIDENTIALITY LEVELS
-    // ========================================
+    // Role Permissions
+    { name: 'role:create', description: 'สร้างบทบาทใหม่', resource: 'role', action: 'create' },
+    { name: 'role:read', description: 'อ่านข้อมูลบทบาท', resource: 'role', action: 'read' },
+    { name: 'role:update', description: 'แก้ไขบทบาท', resource: 'role', action: 'update' },
+    { name: 'role:delete', description: 'ลบบทบาท', resource: 'role', action: 'delete' },
     
-    console.log('🔒 Creating confidentiality levels...')
-    const confidentialityLevels = await Promise.all([
-      prisma.confidentialityLevel.upsert({
-        where: { name: 'ปกติ' },
-        update: {},
-        create: {
-          name: 'ปกติ',
-          description: 'เอกสารทั่วไปที่สามารถเผยแพร่ได้'
-        }
-      }),
-      prisma.confidentialityLevel.upsert({
-        where: { name: 'ลับ' },
-        update: {},
-        create: {
-          name: 'ลับ',
-          description: 'เอกสารลับภายในองค์กร'
-        }
-      }),
-      prisma.confidentialityLevel.upsert({
-        where: { name: 'ลับมาก' },
-        update: {},
-        create: {
-          name: 'ลับมาก',
-          description: 'เอกสารลับมาก ห้ามเผยแพร่ภายนอก'
-        }
-      })
-    ])
-
-    // ========================================
-    // CREATE PERMISSIONS
-    // ========================================
+    // Permission Permissions
+    { name: 'permission:create', description: 'สร้างสิทธิ์ใหม่', resource: 'permission', action: 'create' },
+    { name: 'permission:read', description: 'อ่านข้อมูลสิทธิ์', resource: 'permission', action: 'read' },
+    { name: 'permission:update', description: 'แก้ไขสิทธิ์', resource: 'permission', action: 'update' },
+    { name: 'permission:delete', description: 'ลบสิทธิ์', resource: 'permission', action: 'delete' },
     
-    console.log('📝 Creating permissions...')
-    const permissions = await Promise.all([
-      prisma.permission.upsert({
-        where: { name: 'user.create' },
-        update: {},
-        create: {
-          name: 'user.create',
-          description: 'Create users',
-          resource: 'user',
-          action: 'create'
-        }
-      }),
-      prisma.permission.upsert({
-        where: { name: 'user.read' },
-        update: {},
-        create: {
-          name: 'user.read',
-          description: 'Read users',
-          resource: 'user',
-          action: 'read'
-        }
-      }),
-      prisma.permission.upsert({
-        where: { name: 'user.update' },
-        update: {},
-        create: {
-          name: 'user.update',
-          description: 'Update users',
-          resource: 'user',
-          action: 'update'
-        }
-      }),
-      prisma.permission.upsert({
-        where: { name: 'user.delete' },
-        update: {},
-        create: {
-          name: 'user.delete',
-          description: 'Delete users',
-          resource: 'user',
-          action: 'delete'
-        }
-      }),
-      prisma.permission.upsert({
-        where: { name: 'document.create' },
-        update: {},
-        create: {
-          name: 'document.create',
-          description: 'Create documents',
-          resource: 'document',
-          action: 'create'
-        }
-      }),
-      prisma.permission.upsert({
-        where: { name: 'document.read' },
-        update: {},
-        create: {
-          name: 'document.read',
-          description: 'Read documents',
-          resource: 'document',
-          action: 'read'
-        }
-      }),
-      prisma.permission.upsert({
-        where: { name: 'document.update' },
-        update: {},
-        create: {
-          name: 'document.update',
-          description: 'Update documents',
-          resource: 'document',
-          action: 'update'
-        }
-      }),
-      prisma.permission.upsert({
-        where: { name: 'document.delete' },
-        update: {},
-        create: {
-          name: 'document.delete',
-          description: 'Delete documents',
-          resource: 'document',
-          action: 'delete'
-        }
-      }),
-      prisma.permission.upsert({
-        where: { name: 'document.approve' },
-        update: {},
-        create: {
-          name: 'document.approve',
-          description: 'Approve documents',
-          resource: 'document',
-          action: 'approve'
-        }
-      }),
-      prisma.permission.upsert({
-        where: { name: 'document.reject' },
-        update: {},
-        create: {
-          name: 'document.reject',
-          description: 'Reject documents',
-          resource: 'document',
-          action: 'reject'
-        }
-      })
-    ])
-
-    // ========================================
-    // CREATE ROLES
-    // ========================================
+    // Department Permissions
+    { name: 'department:create', description: 'สร้างแผนกใหม่', resource: 'department', action: 'create' },
+    { name: 'department:read', description: 'อ่านข้อมูลแผนก', resource: 'department', action: 'read' },
+    { name: 'department:update', description: 'แก้ไขแผนก', resource: 'department', action: 'update' },
+    { name: 'department:delete', description: 'ลบแผนก', resource: 'department', action: 'delete' },
     
-    console.log('👥 Creating roles...')
-    const adminRole = await prisma.role.upsert({
-      where: { name: 'admin' },
-      update: {},
-      create: {
-        name: 'admin',
-        description: 'System Administrator (HR)'
-      }
+    // System Permissions
+    { name: 'system:admin', description: 'สิทธิ์ผู้ดูแลระบบ', resource: 'system', action: 'admin' },
+    { name: 'system:reports', description: 'ดูรายงานระบบ', resource: 'system', action: 'reports' },
+  ]
+
+  console.log('📝 Creating permissions...')
+  for (const permission of permissions) {
+    await prisma.permission.upsert({
+      where: { name: permission.name },
+      update: permission,
+      create: permission,
     })
-
-    const managerRole = await prisma.role.upsert({
-      where: { name: 'manager' },
-      update: {},
-      create: {
-        name: 'manager',
-        description: 'Department Manager'
-      }
-    })
-
-    const userRole = await prisma.role.upsert({
-      where: { name: 'user' },
-      update: {},
-      create: {
-        name: 'user',
-        description: 'Regular User (Employee)'
-      }
-    })
-
-    const ceoRole = await prisma.role.upsert({
-      where: { name: 'ceo' },
-      update: {},
-      create: {
-        name: 'ceo',
-        description: 'CEO / Super Admin'
-      }
-    })
-
-    // ========================================
-    // ASSIGN PERMISSIONS TO ROLES
-    // ========================================
-    
-    console.log('🔗 Assigning permissions to roles...')
-    
-    // Admin (HR) gets document management permissions
-    const adminPermissions = permissions.filter(p => 
-      p.name.includes('document') || p.name.includes('user.read')
-    )
-    await Promise.all(
-      adminPermissions.map(permission =>
-        prisma.rolePermission.upsert({
-          where: {
-            roleId_permissionId: {
-              roleId: adminRole.id,
-              permissionId: permission.id
-            }
-          },
-          update: {},
-          create: {
-            roleId: adminRole.id,
-            permissionId: permission.id
-          }
-        })
-      )
-    )
-
-    // CEO gets all permissions
-    await Promise.all(
-      permissions.map(permission =>
-        prisma.rolePermission.upsert({
-          where: {
-            roleId_permissionId: {
-              roleId: ceoRole.id,
-              permissionId: permission.id
-            }
-          },
-          update: {},
-          create: {
-            roleId: ceoRole.id,
-            permissionId: permission.id
-          }
-        })
-      )
-    )
-
-    // Manager gets document read and create permissions
-    const managerPermissions = permissions.filter(p => 
-      p.name.includes('document.read') || p.name.includes('document.create')
-    )
-    await Promise.all(
-      managerPermissions.map(permission =>
-        prisma.rolePermission.upsert({
-          where: {
-            roleId_permissionId: {
-              roleId: managerRole.id,
-              permissionId: permission.id
-            }
-          },
-          update: {},
-          create: {
-            roleId: managerRole.id,
-            permissionId: permission.id
-          }
-        })
-      )
-    )
-
-    // User gets basic document permissions
-    const userPermissions = permissions.filter(p => 
-      p.name.includes('document.read') || p.name.includes('document.create')
-    )
-    await Promise.all(
-      userPermissions.map(permission =>
-        prisma.rolePermission.upsert({
-          where: {
-            roleId_permissionId: {
-              roleId: userRole.id,
-              permissionId: permission.id
-            }
-          },
-          update: {},
-          create: {
-            roleId: userRole.id,
-            permissionId: permission.id
-          }
-        })
-      )
-    )
-
-    // ========================================
-    // CREATE USERS
-    // ========================================
-    
-    console.log('👤 Creating users...')
-    const hashedPassword = await bcrypt.hash('password123', 12)
-
-    const ceoUser = await prisma.user.upsert({
-      where: { email: 'ceo@example.com' },
-      update: {},
-      create: {
-        email: 'ceo@example.com',
-        username: 'ceo',
-        password: hashedPassword,
-        firstName: 'CEO',
-        lastName: 'Administrator',
-        employeeId: 'EMP001',
-        departmentId: null,
-        isActive: true
-      }
-    })
-
-    const hrUser = await prisma.user.upsert({
-      where: { email: 'hr@example.com' },
-      update: {},
-      create: {
-        email: 'hr@example.com',
-        username: 'hr',
-        password: hashedPassword,
-        firstName: 'HR',
-        lastName: 'Manager',
-        employeeId: 'EMP002',
-        departmentId: hrDepartment.id,
-        isActive: true
-      }
-    })
-
-    const itUser = await prisma.user.upsert({
-      where: { email: 'it@example.com' },
-      update: {},
-      create: {
-        email: 'it@example.com',
-        username: 'it',
-        password: hashedPassword,
-        firstName: 'IT',
-        lastName: 'Manager',
-        employeeId: 'EMP003',
-        departmentId: itDepartment.id,
-        isActive: true
-      }
-    })
-
-    const regularUser = await prisma.user.upsert({
-      where: { email: 'user@example.com' },
-      update: {},
-      create: {
-        email: 'user@example.com',
-        username: 'user',
-        password: hashedPassword,
-        firstName: 'Jane',
-        lastName: 'User',
-        employeeId: 'EMP004',
-        departmentId: financeDepartment.id,
-        isActive: true
-      }
-    })
-
-    // ========================================
-    // ASSIGN ROLES TO USERS
-    // ========================================
-    
-    console.log('🔗 Assigning roles to users...')
-    
-    await prisma.userRole.upsert({
-      where: {
-        userId_roleId: {
-          userId: ceoUser.id,
-          roleId: ceoRole.id
-        }
-      },
-      update: {},
-      create: {
-        userId: ceoUser.id,
-        roleId: ceoRole.id
-      }
-    })
-
-    await prisma.userRole.upsert({
-      where: {
-        userId_roleId: {
-          userId: hrUser.id,
-          roleId: adminRole.id
-        }
-      },
-      update: {},
-      create: {
-        userId: hrUser.id,
-        roleId: adminRole.id
-      }
-    })
-
-    await prisma.userRole.upsert({
-      where: {
-        userId_roleId: {
-          userId: itUser.id,
-          roleId: managerRole.id
-        }
-      },
-      update: {},
-      create: {
-        userId: itUser.id,
-        roleId: managerRole.id
-      }
-    })
-
-    await prisma.userRole.upsert({
-      where: {
-        userId_roleId: {
-          userId: regularUser.id,
-          roleId: userRole.id
-        }
-      },
-      update: {},
-      create: {
-        userId: regularUser.id,
-        roleId: userRole.id
-      }
-    })
-
-    // ========================================
-    // CREATE SAMPLE DOCUMENTS
-    // ========================================
-    
-    console.log('📄 Creating sample documents...')
-    
-    const sampleDocument = await prisma.document.upsert({
-      where: { id: 'sample-doc-1' },
-      update: {},
-      create: {
-        id: 'sample-doc-1',
-        documentCode: 'DOC-2024-001',
-        documentTypeId: documentTypes[0].id, // ใบขออนุมัติซื้อ
-        projectName: 'โครงการซื้อคอมพิวเตอร์ใหม่',
-        details: 'ขออนุมัติซื้อคอมพิวเตอร์ 10 เครื่อง สำหรับแผนก IT',
-        confidentialityLevelId: confidentialityLevels[0].id, // ปกติ
-        departmentId: itDepartment.id,
-        status: 'PENDING_HR_REVIEW',
-        creatorId: regularUser.id
-      }
-    })
-
-    // ========================================
-    // CREATE SAMPLE NOTIFICATIONS
-    // ========================================
-    
-    console.log('🔔 Creating sample notifications...')
-    
-    await prisma.notification.upsert({
-      where: { id: 'sample-notif-1' },
-      update: {},
-      create: {
-        id: 'sample-notif-1',
-        userId: regularUser.id,
-        type: 'DOCUMENT_SUBMITTED',
-        title: 'เอกสารถูกส่งแล้ว',
-        message: 'เอกสาร DOC-2024-001 ถูกส่งไปยัง HR แล้ว',
-        read: false,
-        documentId: sampleDocument.id
-      }
-    })
-
-    console.log('✅ Database seeding completed successfully!')
-    console.log('\n📋 Default Login Credentials:')
-    console.log('👑 CEO: ceo@example.com / password123')
-    console.log('👤 HR: hr@example.com / password123')
-    console.log('👨‍💼 IT Manager: it@example.com / password123')
-    console.log('👤 User: user@example.com / password123')
-
-  } catch (error) {
-    console.error('❌ Seeding failed:', error)
-    throw error
   }
+
+  // ========================================
+  // CREATE ROLES
+  // ========================================
+  
+  const roles = [
+    {
+      name: 'Super Admin',
+      description: 'ผู้ดูแลระบบสูงสุด - มีสิทธิ์ทุกอย่างในระบบ',
+    },
+    {
+      name: 'CEO',
+      description: 'ประธานเจ้าหน้าที่บริหาร - อนุมัติเอกสารขั้นสุดท้าย',
+    },
+    {
+      name: 'HR Manager',
+      description: 'ผู้จัดการฝ่ายทรัพยากรบุคคล - ตรวจสอบโครงสร้างเอกสาร',
+    },
+    {
+      name: 'Department Manager',
+      description: 'ผู้จัดการแผนก - จัดการเอกสารในแผนกของตนเอง',
+    },
+    {
+      name: 'Document Creator',
+      description: 'ผู้สร้างเอกสาร - สร้างและแก้ไขเอกสารของตนเอง',
+    },
+    {
+      name: 'Document Reviewer',
+      description: 'ผู้ตรวจสอบเอกสาร - ตรวจสอบและอนุมัติเอกสาร',
+    },
+    {
+      name: 'Viewer',
+      description: 'ผู้ดูเอกสาร - ดูเอกสารที่ได้รับอนุญาตเท่านั้น',
+    },
+  ]
+
+  console.log('👥 Creating roles...')
+  for (const role of roles) {
+    await prisma.role.upsert({
+      where: { name: role.name },
+      update: role,
+      create: role,
+    })
+  }
+
+  // ========================================
+  // ASSIGN PERMISSIONS TO ROLES
+  // ========================================
+  
+  console.log('🔗 Assigning permissions to roles...')
+  
+  // Super Admin - ทุกสิทธิ์
+  const superAdminRole = await prisma.role.findUnique({ where: { name: 'Super Admin' } })
+  const allPermissions = await prisma.permission.findMany()
+  
+  for (const permission of allPermissions) {
+    await prisma.permission.update({
+      where: { id: permission.id },
+      data: { roleId: superAdminRole.id }
+    })
+  }
+
+  // HR Manager - สิทธิ์จัดการผู้ใช้และเอกสาร HR
+  const hrManagerRole = await prisma.role.findUnique({ where: { name: 'HR Manager' } })
+  const hrPermissions = await prisma.permission.findMany({
+    where: {
+      OR: [
+        { resource: 'user' },
+        { resource: 'document' },
+        { resource: 'department' },
+        { name: 'system:reports' },
+      ],
+    },
+  })
+  
+  for (const permission of hrPermissions) {
+    await prisma.permission.update({
+      where: { id: permission.id },
+      data: { roleId: hrManagerRole.id }
+    })
+  }
+
+  // CEO - สิทธิ์อนุมัติเอกสารขั้นสุดท้าย
+  const ceoRole = await prisma.role.findUnique({ where: { name: 'CEO' } })
+  const ceoPermissions = await prisma.permission.findMany({
+    where: {
+      OR: [
+        { name: 'document:read' },
+        { name: 'document:approve' },
+        { name: 'document:reject' },
+        { name: 'system:reports' },
+      ],
+    },
+  })
+  
+  for (const permission of ceoPermissions) {
+    await prisma.permission.update({
+      where: { id: permission.id },
+      data: { roleId: ceoRole.id }
+    })
+  }
+
+  // Department Manager - สิทธิ์จัดการเอกสารในแผนก
+  const deptManagerRole = await prisma.role.findUnique({ where: { name: 'Department Manager' } })
+  const deptManagerPermissions = await prisma.permission.findMany({
+    where: {
+      OR: [
+        { name: 'document:create' },
+        { name: 'document:read' },
+        { name: 'document:update' },
+        { name: 'document:approve' },
+        { name: 'document:reject' },
+        { name: 'user:read' },
+      ],
+    },
+  })
+  
+  for (const permission of deptManagerPermissions) {
+    await prisma.permission.update({
+      where: { id: permission.id },
+      data: { roleId: deptManagerRole.id }
+    })
+  }
+
+  // Document Creator - สิทธิ์สร้างและแก้ไขเอกสาร
+  const creatorRole = await prisma.role.findUnique({ where: { name: 'Document Creator' } })
+  const creatorPermissions = await prisma.permission.findMany({
+    where: {
+      OR: [
+        { name: 'document:create' },
+        { name: 'document:read' },
+        { name: 'document:update' },
+      ],
+    },
+  })
+  
+  for (const permission of creatorPermissions) {
+    await prisma.permission.update({
+      where: { id: permission.id },
+      data: { roleId: creatorRole.id }
+    })
+  }
+
+  // Document Reviewer - สิทธิ์ตรวจสอบและอนุมัติเอกสาร
+  const reviewerRole = await prisma.role.findUnique({ where: { name: 'Document Reviewer' } })
+  const reviewerPermissions = await prisma.permission.findMany({
+    where: {
+      OR: [
+        { name: 'document:read' },
+        { name: 'document:approve' },
+        { name: 'document:reject' },
+      ],
+    },
+  })
+  
+  for (const permission of reviewerPermissions) {
+    await prisma.permission.update({
+      where: { id: permission.id },
+      data: { roleId: reviewerRole.id }
+    })
+  }
+
+  // Viewer - สิทธิ์ดูเอกสารเท่านั้น
+  const viewerRole = await prisma.role.findUnique({ where: { name: 'Viewer' } })
+  const viewerPermission = await prisma.permission.findUnique({ where: { name: 'document:read' } })
+  
+  await prisma.permission.update({
+    where: { id: viewerPermission.id },
+    data: { roleId: viewerRole.id }
+  })
+
+  // ========================================
+  // CREATE SUPER ADMIN USER
+  // ========================================
+  
+  console.log('👑 Creating Super Admin user...')
+  const hashedPassword = await bcrypt.hash('admin123', 12)
+  
+  const superAdminUser = await prisma.user.upsert({
+    where: { email: 'admin@docflow.com' },
+    update: {},
+    create: {
+      email: 'admin@docflow.com',
+      username: 'admin',
+      password: hashedPassword,
+      firstName: 'Super',
+      lastName: 'Admin',
+      employeeId: 'ADMIN001',
+      departmentId: hrDepartment.id,
+      isActive: true
+    }
+  })
+
+  // กำหนด Super Admin role ให้ผู้ใช้
+  await prisma.user.update({
+    where: { id: superAdminUser.id },
+    data: { roleId: superAdminRole.id }
+  })
+
+  // ========================================
+  // CREATE SAMPLE USERS
+  // ========================================
+  
+  console.log('👤 Creating sample users...')
+  
+  // CEO
+  const ceoUser = await prisma.user.upsert({
+    where: { email: 'ceo@docflow.com' },
+    update: {},
+    create: {
+      email: 'ceo@docflow.com',
+      username: 'ceo',
+      password: hashedPassword,
+      firstName: 'CEO',
+      lastName: 'Executive',
+      employeeId: 'CEO001',
+      departmentId: hrDepartment.id,
+      roleId: ceoRole.id,
+      isActive: true
+    }
+  })
+
+  // HR Manager
+  const hrManagerUser = await prisma.user.upsert({
+    where: { email: 'hr@docflow.com' },
+    update: {},
+    create: {
+      email: 'hr@docflow.com',
+      username: 'hr_manager',
+      password: hashedPassword,
+      firstName: 'HR',
+      lastName: 'Manager',
+      employeeId: 'HR001',
+      departmentId: hrDepartment.id,
+      roleId: hrManagerRole.id,
+      isActive: true
+    }
+  })
+
+  // IT Manager
+  const itManagerUser = await prisma.user.upsert({
+    where: { email: 'it@docflow.com' },
+    update: {},
+    create: {
+      email: 'it@docflow.com',
+      username: 'it_manager',
+      password: hashedPassword,
+      firstName: 'IT',
+      lastName: 'Manager',
+      employeeId: 'IT001',
+      departmentId: itDepartment.id,
+      roleId: deptManagerRole.id,
+      isActive: true
+    }
+  })
+
+  // Regular User
+  const regularUser = await prisma.user.upsert({
+    where: { email: 'user@docflow.com' },
+    update: {},
+    create: {
+      email: 'user@docflow.com',
+      username: 'regular_user',
+      password: hashedPassword,
+      firstName: 'Regular',
+      lastName: 'User',
+      employeeId: 'USER001',
+      departmentId: financeDepartment.id,
+      roleId: creatorRole.id,
+      isActive: true
+    }
+  })
+
+  console.log('✅ Seed completed successfully!')
+  console.log('\n📋 Default Login Credentials:')
+  console.log('👑 Super Admin: admin@docflow.com / admin123')
+  console.log('👔 CEO: ceo@docflow.com / admin123')
+  console.log('👤 HR Manager: hr@docflow.com / admin123')
+  console.log('👨‍💼 IT Manager: it@docflow.com / admin123')
+  console.log('👤 Regular User: user@docflow.com / admin123')
 }
 
-// ========================================
-// RUN SEED
-// ========================================
-
-seedData()
-  .then(async () => {
-    await prisma.$disconnect()
-  })
-  .catch(async (e) => {
-    console.error(e)
-    await prisma.$disconnect()
+main()
+  .catch((e) => {
+    console.error('❌ Seed failed:', e)
     process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
   }) 

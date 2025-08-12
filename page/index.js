@@ -1,86 +1,83 @@
+// ========================================
+// AdminJS Resources (แยก resource ออกจาก config หลัก)
+// ========================================
 
 import { getModelByName } from '@adminjs/prisma'
-import { ComponentLoader as AdminJSComponentLoader } from 'adminjs'
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-// ✅ สร้าง __dirname สำหรับ ESModule
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-// ✅ สร้าง instance ของ ComponentLoader
-const componentLoader = new AdminJSComponentLoader()
-
-// ✅ สร้างฟังก์ชันสำหรับ add component
-const addComponent = (id, relativePath) => {
-  const fullPath = path.resolve(__dirname, relativePath)
-  console.log('Component path:', fullPath) // Debug log
-  return componentLoader.add(id, fullPath)
-}
-
-// ✅ เพิ่ม Component ที่ต้องใช้
-// แก้ path ให้ถูกต้อง - จาก src/admin/resources ไปยัง src/UI/components.jsx
-addComponent('Memo', '../../UI/components.jsx') 
-
-// ฟังก์ชัน resource สำหรับโครงการก่อสร้าง
-export const createConstructionProjectResource = (prisma) => ({
-    resource: { model: getModelByName('User'), client: prisma },
-    options: {
-      navigation: {
-        name: 'ตั้งค่า',
-        icon: 'Clipboard',
-      },
-      properties: {
-        id: { isVisible: false },
-        password: { type: 'password' },
-      },
-      actions: {
-        new: {
-          isAccessible: true,
-          components: 'Memo'
-        },
-        edit: {
-          isAccessible: true,
-        },
-      },
-  },
-})
-
-export const createConstructionProjectResourcerole = (prisma) => ({
-  resource: { model: getModelByName('Role'), client: prisma },
-  options: {
-    navigation: {
-      name: 'ตั้งค่า',
-      icon: 'Clipboard',
-    },
-    properties: {
-      id: { isVisible: false },
-      name: { isVisible: { list: true, show: true, edit: true, filter: true } },
-      description: { 
-        type: 'textarea', 
-        isVisible: { list: true, show: true, edit: true, filter: false },
-        components: {
-          edit: 'Memo',
-        },
-      },
-    },
-    actions: {
-      new: { isAccessible: true },
-      edit: { isAccessible: true },
-      delete: { isAccessible: true },
-    },
-  },
-})
+import options, { language } from '../utils/optionsResources.js'
+import  options_user  from './userResource.js'
+import  options_department  from './documentResource.js'
+import  options_documentType  from './documentType.js'
+import  options_confiden  from './confidenResources.js'
+import  options_role  from './roleResource.js'
+import  options_permission  from './permissionResource.js'
+import  options_upload  from './uploaddocuments .js'
+import upload from './feature/uploadfile.js'
+import  options_history  from './hisstoryResources.js'
+import  options_documentApproval  from './documentApproval.js'
+import  options_notification  from './notificationResource.js'
 
 // ฟังก์ชันรวม resource ทั้งหมด
 export const createAdminResources = (prisma) => {
-  const ConstructionProjectResource = createConstructionProjectResource(prisma)
-  const ConstructionProjectResourcerole = createConstructionProjectResourcerole(prisma)
   return [
-    ConstructionProjectResource,
-    ConstructionProjectResourcerole,
-  ]
-}
+        // setting 
+        {
+          resource: { model: getModelByName('Department'), client: prisma },
+          options: options_department,
+        },
 
-// Export componentLoader สำหรับใช้ในไฟล์อื่น
-export { componentLoader } 
+    // User
+     {resource: {model:getModelByName('User'),client:prisma},
+      options: options_user
+    },
+
+    // Document Type Management
+    {
+      resource: { model: getModelByName('DocumentType'), client: prisma },
+      options: options_documentType
+    },
+
+    // Confidentiality Level Management
+    {
+      resource: { model: getModelByName('ConfidentialityLevel'), client: prisma },
+      options: options_confiden
+    },
+
+    // Role Management
+    {
+      resource: { model: getModelByName('Role'), client: prisma },
+       options: options_role
+    },
+
+    // Permission Management
+    {
+      resource: { model: getModelByName('Permission'), client: prisma },
+      options: options_permission,
+      
+    },
+
+    // Document Management
+    {
+      resource: { model: getModelByName('Document'), client: prisma },
+      options: options_upload,
+      features: [upload],
+    },
+
+    // Document Approval Management
+    {
+      resource: { model: getModelByName('DocumentApproval'), client: prisma },
+      options: options_documentApproval
+    },
+
+    // Document History Management
+    {
+      resource: { model: getModelByName('DocumentHistory'), client: prisma },
+      options: options_history,
+    },
+
+    // Notification Management
+    {
+      resource: { model: getModelByName('Notification'), client: prisma },
+      options: options_notification
+    },
+  ]
+} 

@@ -12,6 +12,33 @@ const router = express.Router()
 const prisma = new PrismaClient()
 
 // ========================================
+// HEALTH CHECK ENDPOINT (OPTIMIZED)
+// ========================================
+
+router.get('/health', async (req, res) => {
+  try {
+    // Quick database connection check
+    await prisma.$queryRaw`SELECT 1`
+    
+    res.json({
+      success: true,
+      message: 'API is healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      version: '1.0.0'
+    })
+  } catch (error) {
+    console.error('Health check error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'API is unhealthy',
+      error: error.message
+    })
+  }
+})
+
+// ========================================
 // AUTHENTICATION ROUTES
 // ========================================
 
@@ -24,40 +51,84 @@ router.use('/auth', authRoutes)
 router.use('/documents', documentRoutes)
 
 // ========================================
-// USER ROUTES
+// USER ROUTES (HIGHLY OPTIMIZED)
 // ========================================
 
-// GET /api/users - ดึงข้อมูลผู้ใช้ทั้งหมด
+// GET /api/users - ดึงข้อมูลผู้ใช้ทั้งหมด (with pagination and caching)
 router.get('/users', async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
-      include: {
-        roles: {
-          include: {
-            role: true
+    const { page = 1, limit = 20, search = '', department = '' } = req.query
+    const offset = (page - 1) * limit
+    
+    // Add cache headers
+    res.set('Cache-Control', 'public, max-age=300') // Cache for 5 minutes
+    
+    // Build where clause for search
+    const where = {}
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+    
+    if (department) {
+      where.department = {
+        name: { contains: department, mode: 'insensitive' }
+      }
+    }
+    
+    // Optimized query with pagination
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          createdAt: true,
+          updatedAt: true,
+          roles: {
+            select: {
+              role: {
+                select: {
+                  name: true
+                }
+              }
+            }
+          },
+          department: {
+            select: {
+              id: true,
+              name: true
+            }
           }
         },
-        department: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
-    })
+        skip: offset,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.user.count({ where })
+    ])
     
-    // Remove password from response
-    const safeUsers = users.map(user => {
-      const { password, ...safeUser } = user
-      return {
-        ...safeUser,
-        roles: user.roles.map(ur => ur.role.name)
-      }
-    })
+    // Transform data for better performance
+    const safeUsers = users.map(user => ({
+      ...user,
+      roles: user.roles.map(ur => ur.role.name)
+    }))
     
     res.json({
       success: true,
-      data: safeUsers
+      data: safeUsers,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      },
+      count: safeUsers.length
     })
   } catch (err) {
     console.error('Get users error:', err)
@@ -68,16 +139,30 @@ router.get('/users', async (req, res) => {
   }
 })
 
-// GET /api/users/:id - ดึงข้อมูลผู้ใช้ตาม ID
+// GET /api/users/:id - ดึงข้อมูลผู้ใช้ตาม ID (optimized)
 router.get('/users/:id', async (req, res) => {
   try {
     const { id } = req.params
+    
+    // Add cache headers
+    res.set('Cache-Control', 'public, max-age=300') // Cache for 5 minutes
+    
     const user = await prisma.user.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
         roles: {
-          include: {
-            role: true
+          select: {
+            role: {
+              select: {
+                name: true
+              }
+            }
           }
         },
         department: {
@@ -96,36 +181,47 @@ router.get('/users/:id', async (req, res) => {
       })
     }
     
-    // Remove password from response
-    const { password, ...safeUser } = user
+    // Transform data
+    const safeUser = {
+      ...user,
+      roles: user.roles.map(ur => ur.role.name)
+    }
+    
     res.json({
       success: true,
-      data: {
-        ...safeUser,
-        roles: user.roles.map(ur => ur.role.name)
-      }
+      data: safeUser
     })
   } catch (err) {
     console.error('Get user error:', err)
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: 'เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้' 
+      error: 'เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้'
     })
   }
 })
 
 // ========================================
-// ROLE ROUTES
+// ROLE ROUTES (OPTIMIZED)
 // ========================================
 
-// GET /api/roles - ดึงข้อมูลบทบาททั้งหมด
+// GET /api/roles - ดึงข้อมูลบทบาททั้งหมด (optimized)
 router.get('/roles', async (req, res) => {
   try {
+    // Add cache headers
+    res.set('Cache-Control', 'public, max-age=600') // Cache for 10 minutes
+    
     const roles = await prisma.role.findMany({
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
         permissions: {
-          include: {
-            permission: true
+          select: {
+            permission: {
+              select: {
+                name: true
+              }
+            }
           }
         }
       }
@@ -138,7 +234,8 @@ router.get('/roles', async (req, res) => {
     
     res.json({
       success: true,
-      data: formattedRoles
+      data: formattedRoles,
+      count: formattedRoles.length
     })
   } catch (err) {
     console.error('Get roles error:', err)
@@ -150,37 +247,66 @@ router.get('/roles', async (req, res) => {
 })
 
 // ========================================
-// NOTIFICATION ROUTES
+// NOTIFICATION ROUTES (OPTIMIZED)
 // ========================================
 
-// GET /api/notifications - ดึงข้อมูลการแจ้งเตือน
+// GET /api/notifications - ดึงข้อมูลการแจ้งเตือน (with pagination)
 router.get('/notifications', async (req, res) => {
   try {
-    const notifications = await prisma.notification.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true
+    const { page = 1, limit = 20, userId = '' } = req.query
+    const offset = (page - 1) * limit
+    
+    // Add cache headers
+    res.set('Cache-Control', 'public, max-age=60') // Cache for 1 minute
+    
+    const where = {}
+    if (userId) {
+      where.userId = userId
+    }
+    
+    const [notifications, total] = await Promise.all([
+      prisma.notification.findMany({
+        where,
+        select: {
+          id: true,
+          message: true,
+          type: true,
+          isRead: true,
+          createdAt: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true
+            }
+          },
+          document: {
+            select: {
+              id: true,
+              documentCode: true,
+              projectName: true
+            }
           }
         },
-        document: {
-          select: {
-            id: true,
-            documentCode: true,
-            projectName: true
-          }
+        skip: offset,
+        take: parseInt(limit),
+        orderBy: {
+          createdAt: 'desc'
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+      }),
+      prisma.notification.count({ where })
+    ])
     
     res.json({
       success: true,
-      data: notifications
+      data: notifications,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      },
+      count: notifications.length
     })
   } catch (err) {
     console.error('Get notifications error:', err)
@@ -192,15 +318,79 @@ router.get('/notifications', async (req, res) => {
 })
 
 // ========================================
-// HEALTH CHECK
+// DEPARTMENT ROUTES (NEW)
 // ========================================
 
-router.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'API is running',
-    timestamp: new Date().toISOString()
-  })
+// GET /api/departments - ดึงข้อมูลแผนกทั้งหมด
+router.get('/departments', async (req, res) => {
+  try {
+    // Add cache headers
+    res.set('Cache-Control', 'public, max-age=600') // Cache for 10 minutes
+    
+    const departments = await prisma.department.findMany({
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        _count: {
+          select: {
+            users: true
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    })
+    
+    res.json({
+      success: true,
+      data: departments,
+      count: departments.length
+    })
+  } catch (err) {
+    console.error('Get departments error:', err)
+    res.status(500).json({ 
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดึงข้อมูลแผนก' 
+    })
+  }
+})
+
+// ========================================
+// STATISTICS ROUTES (NEW)
+// ========================================
+
+// GET /api/stats - ดึงสถิติต่างๆ
+router.get('/stats', async (req, res) => {
+  try {
+    // Add cache headers
+    res.set('Cache-Control', 'public, max-age=300') // Cache for 5 minutes
+    
+    const [userCount, documentCount, notificationCount, departmentCount] = await Promise.all([
+      prisma.user.count(),
+      prisma.document.count(),
+      prisma.notification.count(),
+      prisma.department.count()
+    ])
+    
+    res.json({
+      success: true,
+      data: {
+        users: userCount,
+        documents: documentCount,
+        notifications: notificationCount,
+        departments: departmentCount
+      },
+      timestamp: new Date().toISOString()
+    })
+  } catch (err) {
+    console.error('Get stats error:', err)
+    res.status(500).json({ 
+      success: false,
+      error: 'เกิดข้อผิดพลาดในการดึงข้อมูลสถิติ' 
+    })
+  }
 })
 
 export default router 

@@ -1,314 +1,465 @@
 // ========================================
-// Authentication Routes
-// API endpoints สำหรับการเข้าสู่ระบบและจัดการผู้ใช้
+// Authentication API Routes
+// API สำหรับการยืนยันตัวตนและการจัดการผู้ใช้
 // ========================================
 
 import express from 'express'
-import { createPrismaClient } from '../config/database.js'
 import { 
-  hashPassword, 
-  comparePassword, 
-  generateToken, 
-  validateLoginData, 
-  checkUserStatus,
-  authenticateToken 
+  authenticateUser, 
+  authenticateToken, 
+  requirePermission, 
+  requireSuperAdmin,
+  createUser,
+  updateUser,
+  changePassword
 } from '../config/auth.js'
+import { getUserRolesAndPermissions } from '../utils/permissions.js'
 
 const router = express.Router()
-const prisma = createPrismaClient()
 
 // ========================================
-// LOGIN ENDPOINT
+// AUTHENTICATION ROUTES
 // ========================================
 
+/**
+ * POST /api/auth/login
+ * เข้าสู่ระบบ
+ */
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body
 
-    // Validate input data
-    const validationErrors = validateLoginData(email, password)
-    if (validationErrors.length > 0) {
+    // ตรวจสอบข้อมูลที่จำเป็น
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
-        errors: validationErrors
+        message: 'กรุณากรอกอีเมลและรหัสผ่าน'
       })
     }
 
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-      include: {
-        roles: {
-          include: {
-            role: true
-          }
-        }
-      }
-    })
+    // ตรวจสอบการเข้าสู่ระบบ
+    const result = await authenticateUser(email, password)
 
-    // Check user status
-    const statusCheck = checkUserStatus(user)
-    if (!statusCheck.valid) {
-      return res.status(401).json({
-        success: false,
-        message: statusCheck.message
-      })
+    if (!result.success) {
+      return res.status(401).json(result)
     }
 
-    // Verify password
-    const isPasswordValid = await comparePassword(password, user.password)
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      })
-    }
-
-    // Update last login
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() }
-    })
-
-    // Generate JWT token
-    const token = generateToken(user)
-
-    // Return success response
     res.json({
       success: true,
-      message: 'Login successful',
+      message: 'เข้าสู่ระบบสำเร็จ',
       data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          employeeId: user.employeeId,
-          roles: user.roles.map(ur => ur.role.name)
-        },
-        token
+        user: result.user,
+        token: result.token
       }
     })
-
   } catch (error) {
     console.error('Login error:', error)
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
+    })
+  }
+})
+
+/**
+ * POST /api/auth/logout
+ * ออกจากระบบ
+ */
+router.post('/logout', authenticateToken, (req, res) => {
+  try {
+    // ในระบบ JWT ไม่จำเป็นต้องทำอะไรเพิ่มเติม
+    // Client จะต้องลบ token ออกจาก localStorage
+    res.json({
+      success: true,
+      message: 'ออกจากระบบสำเร็จ'
+    })
+  } catch (error) {
+    console.error('Logout error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการออกจากระบบ'
+    })
+  }
+})
+
+/**
+ * GET /api/auth/me
+ * ดึงข้อมูลผู้ใช้ปัจจุบัน
+ */
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const userRolesAndPermissions = await getUserRolesAndPermissions(req.user.userId)
+    
+    if (!userRolesAndPermissions) {
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบข้อมูลผู้ใช้'
+      })
+    }
+
+    res.json({
+      success: true,
+      data: userRolesAndPermissions
+    })
+  } catch (error) {
+    console.error('Get user profile error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้'
+    })
+  }
+})
+
+/**
+ * POST /api/auth/change-password
+ * เปลี่ยนรหัสผ่าน
+ */
+router.post('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body
+
+    // ตรวจสอบข้อมูลที่จำเป็น
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'กรุณากรอกรหัสผ่านปัจจุบันและรหัสผ่านใหม่'
+      })
+    }
+
+    // ตรวจสอบความยาวรหัสผ่านใหม่
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร'
+      })
+    }
+
+    const result = await changePassword(req.user.userId, currentPassword, newPassword)
+    
+    if (!result.success) {
+      return res.status(400).json(result)
+    }
+
+    res.json(result)
+  } catch (error) {
+    console.error('Change password error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน'
     })
   }
 })
 
 // ========================================
-// REGISTER ENDPOINT
+// USER MANAGEMENT ROUTES (สำหรับ Super Admin และ HR Manager)
 // ========================================
 
-router.post('/register', async (req, res) => {
+/**
+ * POST /api/auth/users
+ * สร้างผู้ใช้ใหม่
+ */
+router.post('/users', authenticateToken, requirePermission('user', 'create'), async (req, res) => {
   try {
-    const { 
-      email, 
-      username, 
-      password, 
-      firstName, 
-      lastName, 
-      employeeId 
-    } = req.body
+    const { email, username, password, firstName, lastName, employeeId, departmentId, roleIds } = req.body
 
-    // Validate required fields
+    // ตรวจสอบข้อมูลที่จำเป็น
     if (!email || !username || !password || !firstName || !lastName) {
       return res.status(400).json({
         success: false,
-        message: 'All required fields must be provided'
+        message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน'
       })
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: email.toLowerCase() },
-          { username: username.toLowerCase() }
-        ]
-      }
-    })
-
-    if (existingUser) {
+    // ตรวจสอบความยาวรหัสผ่าน
+    if (password.length < 6) {
       return res.status(400).json({
         success: false,
-        message: 'User with this email or username already exists'
+        message: 'รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร'
       })
     }
 
-    // Hash password
-    const hashedPassword = await hashPassword(password)
-
-    // Create new user
-    const newUser = await prisma.user.create({
-      data: {
-        email: email.toLowerCase(),
-        username: username.toLowerCase(),
-        password: hashedPassword,
-        firstName,
-        lastName,
-        employeeId: employeeId || null,
-        isActive: true
-      },
-      include: {
-        roles: {
-          include: {
-            role: true
-          }
-        }
-      }
+    const result = await createUser({
+      email,
+      username,
+      password,
+      firstName,
+      lastName,
+      employeeId,
+      departmentId,
+      roleIds
     })
 
-    // Generate token
-    const token = generateToken(newUser)
+    if (!result.success) {
+      return res.status(400).json(result)
+    }
 
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      data: {
-        user: {
-          id: newUser.id,
-          email: newUser.email,
-          username: newUser.username,
-          firstName: newUser.firstName,
-          lastName: newUser.lastName,
-          employeeId: newUser.employeeId,
-          roles: newUser.roles.map(ur => ur.role.name)
-        },
-        token
-      }
-    })
-
+    res.status(201).json(result)
   } catch (error) {
-    console.error('Registration error:', error)
+    console.error('Create user error:', error)
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'เกิดข้อผิดพลาดในการสร้างผู้ใช้'
     })
   }
 })
 
-// ========================================
-// GET CURRENT USER
-// ========================================
-
-router.get('/me', authenticateToken, async (req, res) => {
+/**
+ * GET /api/auth/users
+ * ดึงรายการผู้ใช้ทั้งหมด
+ */
+router.get('/users', authenticateToken, requirePermission('user', 'read'), async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
+    const { PrismaClient } = await import('@prisma/client')
+    const prisma = new PrismaClient()
+
+    const users = await prisma.user.findMany({
       include: {
         roles: {
           include: {
             role: true
           }
-        }
+        },
+        department: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    // ลบรหัสผ่านออกจากข้อมูล
+    const safeUsers = users.map(user => {
+      const { password, ...safeUser } = user
+      return safeUser
+    })
+
+    res.json({
+      success: true,
+      data: safeUsers
+    })
+  } catch (error) {
+    console.error('Get users error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงรายการผู้ใช้'
+    })
+  }
+})
+
+/**
+ * GET /api/auth/users/:id
+ * ดึงข้อมูลผู้ใช้ตาม ID
+ */
+router.get('/users/:id', authenticateToken, requirePermission('user', 'read'), async (req, res) => {
+  try {
+    const { id } = req.params
+    const { PrismaClient } = await import('@prisma/client')
+    const prisma = new PrismaClient()
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        roles: {
+          include: {
+            role: true
+          }
+        },
+        department: true
       }
     })
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'ไม่พบผู้ใช้'
       })
     }
 
+    // ลบรหัสผ่านออกจากข้อมูล
+    const { password, ...safeUser } = user
+
     res.json({
       success: true,
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          employeeId: user.employeeId,
-          isActive: user.isActive,
-          lastLoginAt: user.lastLoginAt,
-          roles: user.roles.map(ur => ur.role.name)
-        }
-      }
+      data: safeUser
     })
-
   } catch (error) {
     console.error('Get user error:', error)
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้'
+    })
+  }
+})
+
+/**
+ * PUT /api/auth/users/:id
+ * อัปเดตข้อมูลผู้ใช้
+ */
+router.put('/users/:id', authenticateToken, requirePermission('user', 'update'), async (req, res) => {
+  try {
+    const { id } = req.params
+    const { firstName, lastName, email, username, employeeId, departmentId, isActive, roleIds } = req.body
+
+    // ตรวจสอบข้อมูลที่จำเป็น
+    if (!firstName || !lastName || !email || !username) {
+      return res.status(400).json({
+        success: false,
+        message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน'
+      })
+    }
+
+    const result = await updateUser(id, {
+      firstName,
+      lastName,
+      email,
+      username,
+      employeeId,
+      departmentId,
+      isActive,
+      roleIds
+    })
+
+    if (!result.success) {
+      return res.status(400).json(result)
+    }
+
+    res.json(result)
+  } catch (error) {
+    console.error('Update user error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูลผู้ใช้'
+    })
+  }
+})
+
+/**
+ * DELETE /api/auth/users/:id
+ * ลบผู้ใช้
+ */
+router.delete('/users/:id', authenticateToken, requirePermission('user', 'delete'), async (req, res) => {
+  try {
+    const { id } = req.params
+    const { PrismaClient } = await import('@prisma/client')
+    const prisma = new PrismaClient()
+
+    // ตรวจสอบว่าผู้ใช้มีอยู่หรือไม่
+    const user = await prisma.user.findUnique({
+      where: { id }
+    })
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบผู้ใช้'
+      })
+    }
+
+    // ลบผู้ใช้
+    await prisma.user.delete({
+      where: { id }
+    })
+
+    res.json({
+      success: true,
+      message: 'ลบผู้ใช้สำเร็จ'
+    })
+  } catch (error) {
+    console.error('Delete user error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการลบผู้ใช้'
     })
   }
 })
 
 // ========================================
-// LOGOUT ENDPOINT
+// ROLE & PERMISSION ROUTES
 // ========================================
 
-router.post('/logout', (req, res) => {
-  // In a real application, you might want to blacklist the token
-  res.json({
-    success: true,
-    message: 'Logged out successfully'
-  })
-})
-
-// ========================================
-// CHANGE PASSWORD
-// ========================================
-
-router.post('/change-password', authenticateToken, async (req, res) => {
+/**
+ * GET /api/auth/roles
+ * ดึงรายการ roles ทั้งหมด
+ */
+router.get('/roles', authenticateToken, requirePermission('role', 'read'), async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body
+    const { PrismaClient } = await import('@prisma/client')
+    const prisma = new PrismaClient()
 
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Current password and new password are required'
-      })
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'New password must be at least 6 characters'
-      })
-    }
-
-    // Get user with current password
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id }
-    })
-
-    // Verify current password
-    const isCurrentPasswordValid = await comparePassword(currentPassword, user.password)
-    if (!isCurrentPasswordValid) {
-      return res.status(400).json({
-        success: false,
-        message: 'Current password is incorrect'
-      })
-    }
-
-    // Hash new password
-    const hashedNewPassword = await hashPassword(newPassword)
-
-    // Update password
-    await prisma.user.update({
-      where: { id: req.user.id },
-      data: { password: hashedNewPassword }
+    const roles = await prisma.role.findMany({
+      include: {
+        permissions: {
+          include: {
+            permission: true
+          }
+        },
+        users: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc'
+      }
     })
 
     res.json({
       success: true,
-      message: 'Password changed successfully'
+      data: roles
     })
-
   } catch (error) {
-    console.error('Change password error:', error)
+    console.error('Get roles error:', error)
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'เกิดข้อผิดพลาดในการดึงรายการ roles'
+    })
+  }
+})
+
+/**
+ * GET /api/auth/permissions
+ * ดึงรายการ permissions ทั้งหมด
+ */
+router.get('/permissions', authenticateToken, requirePermission('permission', 'read'), async (req, res) => {
+  try {
+    const { PrismaClient } = await import('@prisma/client')
+    const prisma = new PrismaClient()
+
+    const permissions = await prisma.permission.findMany({
+      include: {
+        roles: {
+          include: {
+            role: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: [
+        { resource: 'asc' },
+        { action: 'asc' }
+      ]
+    })
+
+    res.json({
+      success: true,
+      data: permissions
+    })
+  } catch (error) {
+    console.error('Get permissions error:', error)
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงรายการ permissions'
     })
   }
 })

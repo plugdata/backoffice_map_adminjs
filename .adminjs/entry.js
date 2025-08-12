@@ -1,4 +1,8 @@
 AdminJS.UserComponents = {}
+import Dashboard from '../src/page/dashboard'
+AdminJS.UserComponents.Dashboard = Dashboard
+import notification from '../src/page/listnotification'
+AdminJS.UserComponents.notification = notification
 import UploadEditComponent from '../node_modules/@adminjs/upload/build/features/upload-file/components/UploadEditComponent'
 AdminJS.UserComponents.UploadEditComponent = UploadEditComponent
 import UploadListComponent from '../node_modules/@adminjs/upload/build/features/upload-file/components/UploadListComponent'
