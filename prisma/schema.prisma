@@ -164,6 +164,7 @@ model Map {
   longitude         Float?
   colors            String?
   data              Json?
+  geom              Unsupported("geometry")
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt
   buildingControl   BuildingControl? @relation(fields: [buildingControlId], references: [id])

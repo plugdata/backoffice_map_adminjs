@@ -24,7 +24,6 @@ import uploadRoutes from './routes/upload.js'
 import mapRoutes from './routes/maprouter.js'
 import locationRoutes from './routes/location.js'
 import mapsRoutes from './routes/maps.js'
-import kmlRoutes from './routes/kml.js'
 import cache from './routes/cache.js'
 
 // Swagger
@@ -91,7 +90,6 @@ const initializeApp = async () => {
     app.use('/api/upload', uploadRoutes)
     app.use('/api/location', locationRoutes)
     app.use('/api/maps', mapsRoutes)
-    app.use('/api/kml', kmlRoutes)
     app.use('/api', mapRoutes)
     app.use('/tools', cache)
 
