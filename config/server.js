@@ -40,7 +40,7 @@ export const setupStaticFiles = (app) => {
 // SERVER STARTUP
 // ========================================
 
-export const startServer = (app, port = 3001) => {
+export const startServer = (app, port = 3002) => {
   app.listen(port, () => {
     console.log(`🚀 Server running on http://localhost:${port}`)
   })

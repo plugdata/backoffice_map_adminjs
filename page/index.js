@@ -3,81 +3,76 @@
 // ========================================
 
 import { getModelByName } from '@adminjs/prisma'
-import options, { language } from '../utils/optionsResources.js'
-import  options_user  from './userResource.js'
-import  options_department  from './documentResource.js'
-import  options_documentType  from './documentType.js'
-import  options_confiden  from './confidenResources.js'
-import  options_role  from './roleResource.js'
-import  options_permission  from './permissionResource.js'
-import  options_upload  from './uploaddocuments .js'
-import upload from './feature/uploadfile.js'
-import  options_history  from './hisstoryResources.js'
-import  options_documentApproval  from './documentApproval.js'
-import  options_notification  from './notificationResource.js'
-
+import options_user from './user.js'
+//import options_status from './status.js'
+import options_owner from './owner.js'
+import options_fiscalyear from './fiscalyear.js'
+import options_buildcontrol from './buildcontrol.js'
+import options_worktopic from './worktopic.js'
+import uploads_options from './uploads.js'
+import options_zoneRisk from './zoneRisk.js'
+import options_map from './map.js'
+import options_planproject from './planproject.js'
+import options_approvedproject from './approveproject.js'
 // ฟังก์ชันรวม resource ทั้งหมด
 export const createAdminResources = (prisma) => {
+  (prisma)
   return [
-        // setting 
-        {
-          resource: { model: getModelByName('Department'), client: prisma },
-          options: options_department,
-        },
+     {
+      resource: { model: getModelByName('User'), client: prisma },
+      options:options_user,
+    
+     },
 
-    // User
-     {resource: {model:getModelByName('User'),client:prisma},
-      options: options_user
-    },
-
-    // Document Type Management
+     {
+      resource: { model: getModelByName('Owner'), client: prisma },
+      options: options_owner,
+      },
     {
-      resource: { model: getModelByName('DocumentType'), client: prisma },
-      options: options_documentType
+      resource: { model: getModelByName('FiscalYear'), client: prisma },
+      options: options_fiscalyear,
+     
     },
-
-    // Confidentiality Level Management
     {
-      resource: { model: getModelByName('ConfidentialityLevel'), client: prisma },
-      options: options_confiden
+      resource: { model: getModelByName('WorkTopic'), client: prisma },
+      options: options_worktopic,
     },
-
-    // Role Management
     {
-      resource: { model: getModelByName('Role'), client: prisma },
-       options: options_role
-    },
-
-    // Permission Management
-    {
-      resource: { model: getModelByName('Permission'), client: prisma },
-      options: options_permission,
+      resource: { model: getModelByName('BuildingControl'), client: prisma },
+      options: options_buildcontrol,
       
     },
 
-    // Document Management
     {
-      resource: { model: getModelByName('Document'), client: prisma },
-      options: options_upload,
-      features: [upload],
+      resource: { model: getModelByName('RiskZone'), client: prisma },
+      options: options_zoneRisk,
+      
+    },
+    {
+      resource: { model: getModelByName('ZoningPlan'), client: prisma },
+      options: {
+        navigation: {
+          name: 'ฝ่ายควบคุมอาคาร',
+          icon: 'Home',
+        },
+      },
     },
 
-    // Document Approval Management
     {
-      resource: { model: getModelByName('DocumentApproval'), client: prisma },
-      options: options_documentApproval
+      resource: { model: getModelByName('PlanProject'), client: prisma },
+      options: options_planproject,
     },
-
-    // Document History Management
     {
-      resource: { model: getModelByName('DocumentHistory'), client: prisma },
-      options: options_history,
+      resource: { model: getModelByName('ApprovedProject'), client: prisma },
+      options: options_approvedproject,
     },
-
-    // Notification Management
-    {
-      resource: { model: getModelByName('Notification'), client: prisma },
-      options: options_notification
+     {
+      resource: { model: getModelByName('Map'), client: prisma },
+      options: options_map,
+  }, 
+    {  
+      resource: { model: getModelByName('Uploads'), client: prisma },
+      options: uploads_options,
     },
   ]
 } 

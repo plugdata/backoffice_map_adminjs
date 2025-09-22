@@ -3,7 +3,9 @@ export default {
   content: [
     './public/css/**/*.css',              // ✅ ครอบคลุม CSS files  Component ย่อย
     './public/**/*.{html,js}',
-    './src/**/*.{js,jsx,ts,tsx}',        // ✅ ครอบคลุม src directory
+    './src/**/*.{js,jsx,ts,tsx}',  
+    './src/page/**/*.{js,jsx,ts,tsx}', 
+    './src/components/**/*.{js,jsx,ts,tsx}',       // ✅ ครอบคลุม src directory
     './node_modules/@adminjs/design-system/**/*.{js,jsx,ts,tsx}',
     './node_modules/adminjs/**/*.{js,jsx,ts,tsx}',
   ],

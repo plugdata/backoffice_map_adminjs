@@ -1,5 +1,5 @@
 // ========================================
-// Dashboard API Routes
+// Dashboard API Routes (Prisma models that exist)
 // ========================================
 
 import express from 'express'
@@ -9,352 +9,159 @@ import { authenticateToken } from '../config/auth.js'
 const router = express.Router()
 const prisma = new PrismaClient()
 
-// ========================================
-// GET /api/dashboard/stats - ข้อมูลสถิติหลัก
-// ========================================
-router.get('/stats', authenticateToken, async (req, res) => {
+// Summary counts for main entities
+router.get('/summary', authenticateToken, async (req, res) => {
   try {
-    // ข้อมูลพื้นที่จัดเก็บ
-    const storageStats = await getStorageStats()
-    
-    // ข้อมูลการอัปโหลด
-    const uploadStats = await getUploadStats()
-    
-    // ข้อมูลการใช้งาน
-    const usageStats = await getUsageStats()
+    const [users, owners, fiscalYears, buildings, risks, zonings, uploads, maps] = await Promise.all([
+      prisma.user.count(),
+      prisma.owner.count(),
+      prisma.fiscalYear.count(),
+      prisma.buildingControl.count(),
+      prisma.riskZone.count(),
+      prisma.zoningPlan.count(),
+      prisma.uploads.count(),
+      prisma.map.count(),
+    ])
 
     res.json({
       success: true,
       data: {
-        storage: storageStats,
-        uploads: uploadStats,
-        usage: usageStats
+        users, owners, fiscalYears,
+        buildingControls: buildings,
+        riskZones: risks,
+        zoningPlans: zonings,
+        uploads,
+        maps,
       }
     })
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error)
-    res.status(500).json({
-      success: false,
-      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลสถิติ'
-    })
+    console.error('Error fetching summary:', error)
+    res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการดึงสรุปข้อมูล' })
   }
 })
 
-// ========================================
-// GET /api/dashboard/upload-trend - แนวโน้มการอัปโหลด
-// ========================================
-router.get('/upload-trend', authenticateToken, async (req, res) => {
+// BuildingControl grouped by FiscalYear
+router.get('/building-by-year', authenticateToken, async (req, res) => {
   try {
-    const { days = 7 } = req.query
-    const trendData = await getUploadTrend(parseInt(days))
-    
-    res.json({
-      success: true,
-      data: trendData
+    const groups = await prisma.buildingControl.groupBy({
+      by: ['fiscalYearId'],
+      _count: { _all: true }
     })
+    const years = await prisma.fiscalYear.findMany({ select: { id: true, year: true } })
+    const yearMap = new Map(years.map(y => [y.id, y.year]))
+    const data = groups.map(g => ({ fiscalYearId: g.fiscalYearId, year: yearMap.get(g.fiscalYearId) || g.fiscalYearId, count: g._count._all }))
+    res.json({ success: true, data })
   } catch (error) {
-    console.error('Error fetching upload trend:', error)
-    res.status(500).json({
-      success: false,
-      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลแนวโน้ม'
-    })
+    console.error('Error fetching building-by-year:', error)
+    res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการดึงข้อมูลอาคารตามปีงบประมาณ' })
   }
 })
 
-// ========================================
-// GET /api/dashboard/storage-distribution - การกระจายพื้นที่จัดเก็บ
-// ========================================
-router.get('/storage-distribution', authenticateToken, async (req, res) => {
+// Uploads trend by month
+router.get('/uploads-trend', authenticateToken, async (req, res) => {
   try {
-    const distribution = await getStorageDistribution()
-    
-    res.json({
-      success: true,
-      data: distribution
-    })
-  } catch (error) {
-    console.error('Error fetching storage distribution:', error)
-    res.status(500).json({
-      success: false,
-      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลการกระจายพื้นที่'
-    })
-  }
-})
+    const months = Number(req.query.months || 6)
+    const result = []
+    const now = new Date()
+    const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
 
-// ========================================
-// GET /api/dashboard/department-usage - การใช้งานตามแผนก
-// ========================================
-router.get('/department-usage', authenticateToken, async (req, res) => {
-  try {
-    const usage = await getDepartmentUsage()
-    
-    res.json({
-      success: true,
-      data: usage
-    })
-  } catch (error) {
-    console.error('Error fetching department usage:', error)
-    res.status(500).json({
-      success: false,
-      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลการใช้งานแผนก'
-    })
-  }
-})
-
-// ========================================
-// GET /api/dashboard/monthly-uploads - การอัปโหลดรายเดือน
-// ========================================
-router.get('/monthly-uploads', authenticateToken, async (req, res) => {
-  try {
-    const { months = 6 } = req.query
-    const monthlyData = await getMonthlyUploads(parseInt(months))
-    
-    res.json({
-      success: true,
-      data: monthlyData
-    })
-  } catch (error) {
-    console.error('Error fetching monthly uploads:', error)
-    res.status(500).json({
-      success: false,
-      message: 'เกิดข้อผิดพลาดในการดึงข้อมูลรายเดือน'
-    })
-  }
-})
-
-// ========================================
-// Helper Functions
-// ========================================
-
-/**
- * ดึงข้อมูลสถิติพื้นที่จัดเก็บ
- */
-async function getStorageStats() {
-  // นับจำนวนเอกสารและไฟล์
-  const documentCount = await prisma.document.count()
-  const fileCount = await prisma.document.count({
-    where: {
-      filePath: { not: null }
-    }
-  })
-
-  // คำนวณขนาดไฟล์ทั้งหมด (MB)
-  const fileSizes = await prisma.document.aggregate({
-    where: {
-      fileSize: { not: null }
-    },
-    _sum: {
-      fileSize: true
-    }
-  })
-
-  const totalSizeMB = Math.round((fileSizes._sum.fileSize || 0) / (1024 * 1024))
-  const maxStorageMB = 1024 // 1GB
-
-  return {
-    used: totalSizeMB,
-    total: maxStorageMB,
-    documents: documentCount,
-    files: fileCount
-  }
-}
-
-/**
- * ดึงข้อมูลสถิติการอัปโหลด
- */
-async function getUploadStats() {
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
-  const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
-
-  const [todayCount, weekCount, monthCount, totalCount] = await Promise.all([
-    prisma.document.count({
-      where: { createdAt: { gte: today } }
-    }),
-    prisma.document.count({
-      where: { createdAt: { gte: weekAgo } }
-    }),
-    prisma.document.count({
-      where: { createdAt: { gte: monthAgo } }
-    }),
-    prisma.document.count()
-  ])
-
-  return {
-    today: todayCount,
-    week: weekCount,
-    month: monthCount,
-    total: totalCount
-  }
-}
-
-/**
- * ดึงข้อมูลสถิติการใช้งาน
- */
-async function getUsageStats() {
-  const [activeUsers, totalUsers, departments, documentTypes] = await Promise.all([
-    prisma.user.count({
-      where: { 
-        lastLoginAt: { 
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 วันล่าสุด
-        }
-      }
-    }),
-    prisma.user.count(),
-    prisma.department.count(),
-    prisma.documentType.count()
-  ])
-
-  return {
-    activeUsers,
-    totalUsers,
-    departments,
-    documentTypes
-  }
-}
-
-/**
- * ดึงข้อมูลแนวโน้มการอัปโหลด
- */
-async function getUploadTrend(days = 7) {
-  const trendData = []
-  const now = new Date()
-
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
-    const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000)
-
-    const uploads = await prisma.document.count({
-      where: {
-        createdAt: {
-          gte: startOfDay,
-          lt: endOfDay
-        }
-      }
-    })
-
-    const dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์']
-    const dayName = dayNames[date.getDay()]
-
-    trendData.push({
-      name: dayName,
-      uploads,
-      downloads: Math.floor(uploads * 0.7) // Mock download data
-    })
-  }
-
-  return trendData
-}
-
-/**
- * ดึงข้อมูลการกระจายพื้นที่จัดเก็บ
- */
-async function getStorageDistribution() {
-  const mimeTypes = await prisma.document.groupBy({
-    by: ['mimeType'],
-    _sum: {
-      fileSize: true
-    },
-    where: {
-      mimeType: { not: null },
-      fileSize: { not: null }
-    }
-  })
-
-  const distribution = []
-  const typeNames = {
-    'application/pdf': 'เอกสาร PDF',
-    'image/': 'รูปภาพ',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'เอกสาร Word',
-    'application/msword': 'เอกสาร Word',
-    'application/vnd.ms-excel': 'เอกสาร Excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'เอกสาร Excel'
-  }
-
-  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4']
-
-  mimeTypes.forEach((type, index) => {
-    const sizeMB = Math.round((type._sum.fileSize || 0) / (1024 * 1024))
-    const typeName = typeNames[type.mimeType] || 'ไฟล์อื่นๆ'
-    
-    distribution.push({
-      name: typeName,
-      value: sizeMB,
-      color: colors[index % colors.length]
-    })
-  })
-
-  return distribution
-}
-
-/**
- * ดึงข้อมูลการใช้งานตามแผนก
- */
-async function getDepartmentUsage() {
-  const usage = await prisma.department.findMany({
-    select: {
-      name: true,
-      documents: {
-        select: {
-          _count: true
-        }
-      }
-    }
-  })
-
-  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4']
-
-  return usage.map((dept, index) => ({
-    name: dept.name,
-    documents: dept.documents._count,
-    color: colors[index % colors.length]
-  }))
-}
-
-/**
- * ดึงข้อมูลการอัปโหลดรายเดือน
- */
-async function getMonthlyUploads(months = 6) {
-  const monthlyData = []
-  const now = new Date()
-  const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 
-                     'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
-
-  for (let i = months - 1; i >= 0; i--) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1)
-    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0)
-
-    const [uploads, approved] = await Promise.all([
-      prisma.document.count({
-        where: {
-          createdAt: {
-            gte: startOfMonth,
-            lte: endOfMonth
-          }
-        }
-      }),
-      prisma.document.count({
-        where: {
-          createdAt: {
-            gte: startOfMonth,
-            lte: endOfMonth
-          },
-          status: 'APPROVED'
-        }
+    for (let i = months - 1; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const start = new Date(date.getFullYear(), date.getMonth(), 1)
+      const end = new Date(date.getFullYear(), date.getMonth() + 1, 1)
+      const count = await prisma.uploads.count({
+        where: { createdAt: { gte: start, lt: end } }
       })
+      result.push({ month: monthNames[date.getMonth()], uploads: count })
+    }
+
+    res.json({ success: true, data: result })
+  } catch (error) {
+    console.error('Error fetching uploads-trend:', error)
+    res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการดึงแนวโน้มการอัปโหลด' })
+  }
+})
+
+// Recent building controls
+router.get('/recent-buildings', authenticateToken, async (req, res) => {
+  try {
+    const take = Number(req.query.limit || 10)
+    const records = await prisma.buildingControl.findMany({
+      take,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        building_type: true,
+        use_purpose: true,
+        license_number: true,
+        createdAt: true,
+        owner_id: true,
+        fiscalYearId: true,
+      }
+    })
+    res.json({ success: true, data: records })
+  } catch (error) {
+    console.error('Error fetching recent-buildings:', error)
+    res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการดึงรายการล่าสุด' })
+  }
+})
+
+export default router
+
+// ========================================
+// Extra: entity recent and summary endpoints
+// ========================================
+
+const modelMap = {
+  BuildingControl: (prisma) => prisma.buildingControl,
+  RiskZone: (prisma) => prisma.riskZone,
+  ZoningPlan: (prisma) => prisma.zoningPlan,
+  PlanProject: (prisma) => prisma.planProject,
+  ApprovedProject: (prisma) => prisma.approvedProject,
+}
+
+router.get('/entity/recent', authenticateToken, async (req, res) => {
+  try {
+    const model = req.query.model
+    const take = Number(req.query.limit || 10)
+    if (!modelMap[model]) return res.status(400).json({ success: false, message: 'invalid model' })
+
+    const client = modelMap[model](prisma)
+    const orderByField = 'updatedAt' in (client.fields || {}) ? 'updatedAt' : 'createdAt'
+    const records = await client.findMany({ take, orderBy: { [orderByField]: 'desc' } })
+    res.json({ success: true, data: records })
+  } catch (e) {
+    console.error('entity/recent error', e)
+    res.status(500).json({ success: false, message: 'server error' })
+  }
+})
+
+router.get('/entity/summary', authenticateToken, async (req, res) => {
+  try {
+    const model = req.query.model
+    if (!modelMap[model]) return res.status(400).json({ success: false, message: 'invalid model' })
+
+    const client = modelMap[model](prisma)
+    const [total, latest, uploadsTotal, latestUpload] = await Promise.all([
+      client.count(),
+      client.findFirst({ orderBy: { updatedAt: 'desc' } }).catch(() => null),
+      prisma.uploads.count(),
+      prisma.uploads.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null)
     ])
 
-    monthlyData.push({
-      month: monthNames[date.getMonth()],
-      uploads,
-      approved
+    res.json({
+      success: true,
+      data: {
+        total,
+        latestUpdatedAt: latest?.updatedAt || latest?.createdAt || null,
+        uploads: {
+          total: uploadsTotal,
+          latestCreatedAt: latestUpload?.createdAt || null
+        }
+      }
     })
+  } catch (e) {
+    console.error('entity/summary error', e)
+    res.status(500).json({ success: false, message: 'server error' })
   }
-
-  return monthlyData
-}
-
-export default router 
+})

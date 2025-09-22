@@ -12,7 +12,7 @@ const localProvider = {
 const upload = uploadFeature({
   provider: { local: localProvider },
   properties: {
-    key: 'key', 
+    key: 'namefile', 
     filePath: 'filePath',       // This maps the file key to filePath column
     filename: 'fileName',   // This maps the filename to fileName column
     mimeType: 'mimeType',   // This maps the mime type to mimeType column

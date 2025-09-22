@@ -1,11 +1,17 @@
 AdminJS.UserComponents = {}
+import OwnerShow from '../src/page/show_owner'
+AdminJS.UserComponents.OwnerShow = OwnerShow
+import Map from '../src/page/Map'
+AdminJS.UserComponents.Map = Map
+import ShowMap from '../src/components/map/show_map'
+AdminJS.UserComponents.ShowMap = ShowMap
+import FileUrlPreview from '../src/components/featureUi/FileUrlPreview'
+AdminJS.UserComponents.FileUrlPreview = FileUrlPreview
+import FileUploadEdit from '../src/components/featureUi/FileUploadEdit'
+AdminJS.UserComponents.FileUploadEdit = FileUploadEdit
+import Showupload from '../src/components/featureUi/Showupload'
+AdminJS.UserComponents.Showupload = Showupload
 import Dashboard from '../src/page/dashboard'
 AdminJS.UserComponents.Dashboard = Dashboard
-import notification from '../src/page/listnotification'
-AdminJS.UserComponents.notification = notification
-import UploadEditComponent from '../node_modules/@adminjs/upload/build/features/upload-file/components/UploadEditComponent'
-AdminJS.UserComponents.UploadEditComponent = UploadEditComponent
-import UploadListComponent from '../node_modules/@adminjs/upload/build/features/upload-file/components/UploadListComponent'
-AdminJS.UserComponents.UploadListComponent = UploadListComponent
-import UploadShowComponent from '../node_modules/@adminjs/upload/build/features/upload-file/components/UploadShowComponent'
-AdminJS.UserComponents.UploadShowComponent = UploadShowComponent
+import UploadFile from '../src/components/featureUi/upload_file'
+AdminJS.UserComponents.UploadFile = UploadFile

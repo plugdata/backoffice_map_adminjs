@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>กำลังโหลดระบบจัดการอาคาร...</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      overflow: hidden;
+    }
+
+    .splash-container {
+      text-align: center;
+      max-width: 400px;
+      padding: 40px 20px;
+    }
+
+    .logo {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      animation: pulse 2s infinite;
+    }
+
+    .title {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      opacity: 0.8;
+      margin-bottom: 30px;
+    }
+
+    .loading-bar {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .loading-progress {
+      height: 100%;
+      background: white;
+      border-radius: 2px;
+      animation: loading 3s ease-in-out infinite;
+    }
+
+    .loading-text {
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+
+    .tips {
+      margin-top: 40px;
+      font-size: 0.8rem;
+      opacity: 0.6;
+      line-height: 1.5;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    @keyframes loading {
+      0% { width: 0%; }
+      50% { width: 70%; }
+      100% { width: 100%; }
+    }
+
+    .fade-out {
+      animation: fadeOut 0.5s ease-out forwards;
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="splash-container" id="splash">
+    <div class="logo">🏢</div>
+    <h1 class="title">ระบบจัดการอาคาร</h1>
+    <p class="subtitle">กำลังโหลดระบบ...</p>
+    
+    <div class="loading-bar">
+      <div class="loading-progress"></div>
+    </div>
+    
+    <p class="loading-text">กำลังเตรียมข้อมูลและส่วนประกอบ</p>
+    
+    <div class="tips">
+      <p>💡 เคล็ดลับ: ระบบจะโหลดเร็วขึ้นในครั้งต่อไป</p>
+      <p>🔧 หากโหลดช้า ลองรีเฟรชหน้าเว็บ</p>
+    </div>
+  </div>
+
+  <script>
+    // ตรวจสอบว่า AdminJS โหลดเสร็จแล้วหรือยัง
+    let checkCount = 0;
+    const maxChecks = 30; // ตรวจสอบสูงสุด 30 ครั้ง (30 วินาที)
+    
+    function checkAdminJSLoaded() {
+      checkCount++;
+      
+      // ตรวจสอบว่า AdminJS โหลดเสร็จแล้วหรือยัง
+      if (window.location.pathname.includes('/admin') && 
+          (document.querySelector('.adminjs_App') || 
+           document.querySelector('[data-testid="adminjs"]') ||
+           document.querySelector('.adminjs_Login'))) {
+        
+        // AdminJS โหลดเสร็จแล้ว
+        const splash = document.getElementById('splash');
+        splash.classList.add('fade-out');
+        
+        setTimeout(() => {
+          splash.style.display = 'none';
+        }, 500);
+        
+        return;
+      }
+      
+      // ถ้ายังไม่โหลดเสร็จและยังไม่เกินจำนวนครั้งที่กำหนด
+      if (checkCount < maxChecks) {
+        setTimeout(checkAdminJSLoaded, 1000);
+      } else {
+        // ถ้าโหลดนานเกินไป แสดงข้อความ
+        const loadingText = document.querySelector('.loading-text');
+        if (loadingText) {
+          loadingText.innerHTML = '⚠️ โหลดนานเกินไป <a href="/admin" style="color: white; text-decoration: underline;">คลิกที่นี่</a>';
+        }
+      }
+    }
+    
+    // เริ่มตรวจสอบหลังจาก 2 วินาที
+    setTimeout(checkAdminJSLoaded, 2000);
+    
+    // ตรวจสอบการเปลี่ยนแปลง URL
+    let currentUrl = window.location.href;
+    setInterval(() => {
+      if (window.location.href !== currentUrl) {
+        currentUrl = window.location.href;
+        // URL เปลี่ยนแล้ว แสดงว่า AdminJS โหลดเสร็จ
+        const splash = document.getElementById('splash');
+        splash.classList.add('fade-out');
+        setTimeout(() => {
+          splash.style.display = 'none';
+        }, 500);
+      }
+    }, 500);
+  </script>
+</body>
+</html> 

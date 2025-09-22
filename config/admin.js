@@ -1,66 +1,142 @@
 // ========================================
 // AdminJS Configuration
-// ตั้งค่า AdminJS dashboard และ resources
+// ปิด cache ทั้งหมด (webpack + AdminJS settings)
 // ========================================
 
 import AdminJS from 'adminjs'
 import { Database, Resource } from '@adminjs/prisma'
-import { componentLoader } from '../utils/loder.js'
-import options, { language } from '../utils/optionsResources.js'
 import { createAdminResources } from '../page/index.js'
-import { verifyToken } from './auth.js'
+import { componentLoader } from './optionsResources.js'
+import options from './optionsResources.js'
+import { fileURLToPath } from 'url'
 
-// ========================================
-// AUTHENTICATION MIDDLEWARE FOR ADMINJS
-// ========================================
+const __filename = fileURLToPath(import.meta.url)
 
-const authenticateAdmin = async (email, password) => {
-  // ตรวจสอบ token จาก localStorage (จะถูกส่งมาจาก frontend)
-  const token = localStorage.getItem('authToken')
-  if (!token) {
-    return false
-  }
+// ✅ ปิด cache ทุกโหมด
+const adminJsOptions = {
+  ...options,
 
-  const decoded = verifyToken(token)
-  if (!decoded) {
-    return false
-  }
+  // ========================================
+  // BUNDLE OPTIMIZATION
+  // ========================================
+  bundler: {
+    enabled: true, // ต้องเปิด bundler ให้ build component ได้
+    webpack: {
+      optimization: {
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+            },
+            adminjs: {
+              test: /[\\/]node_modules[\\/]@adminjs[\\/]/,
+              name: 'adminjs',
+              chunks: 'all',
+              priority: 10,
+            },
+          },
+        },
+        minimize: false, // ❌ ไม่บีบโค้ด เพื่อ debug ง่าย
+      },
+      // ❌ ปิด webpack cache ตลอด
+      cache: false,
+    },
+  },
 
-  // ตรวจสอบว่าผู้ใช้มีสิทธิ์เข้าถึง AdminJS หรือไม่
-  // ในที่นี้เราจะอนุญาตให้ทุกคนที่ login แล้วเข้าถึงได้
-  return true
+  // ========================================
+  // ASSET OPTIMIZATION
+  // ========================================
+  assets: {
+    styles: [
+      'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
+      ...(options.assets?.styles || []),
+    ],
+    scripts: [
+      ...(options.assets?.scripts || []),
+    ],
+  },
+
+  // ========================================
+  // CACHE SETTINGS (AdminJS internal cache)
+  // ========================================
+  settings: {
+    cache: {
+      enabled: false, // ❌ ปิด internal cache
+      maxAge: 0,
+    },
+  },
+
+  // ========================================
+  // DATABASE CONFIGURATION
+  // ========================================
+  databases: [],
+  resources: [],
+  componentLoader: componentLoader, // ✅ ใช้ componentLoader จาก optionsResources
+
+  // ========================================
+  // UI/UX OPTIMIZATIONS
+  // ========================================
+  dashboard: {
+    component: 'Dashboard',
+  },
+
+  branding: {
+    companyName: 'ระบบจัดการอาคาร',
+    logo: false,
+    softwareBrothers: false,
+    theme: {
+      colors: {
+        primary100: '#667eea',
+        primary80: '#764ba2',
+        primary60: '#f093fb',
+        primary40: '#f5576c',
+        primary20: '#4facfe',
+        filterBg: '#ffffff',
+        accent: '#667eea',
+        hoverBg: '#f5f5f5',
+      },
+    },
+  },
+
+  rootPath: '/admin',
 }
 
 // ========================================
 // CREATE ADMINJS INSTANCE
 // ========================================
-
-export const createAdminJS = (prisma) => {
-  // ลงทะเบียน Prisma adapter สำหรับ AdminJS
+export const createAdminJS = async (prisma) => {
   AdminJS.registerAdapter({ Database, Resource })
 
-  // สร้าง AdminJS instance
-  return new AdminJS({
-    rootPath: '/admin',
-    
-    locale: {
-      language,
-      availableLanguages: ['en', 'th'],
-    },
-    ...options,
-    branding: {
-      companyName: 'DocFlow System',
-      softwareBrothers: false, // เอาโลโก้ลิงก์ออก
-      logo: false, // เอาโลโก้ภาพออก (ถ้าคุณไม่ใช้โลโก้ภาพ)
-    },
-    dashboard: {
-      component: 'Dashboard',
-    },    
-    assets: {
-      // เพิ่ม style admin-custom
-      styles: ['../public/css/admin-custom.css'],
-    },
-    resources: createAdminResources(prisma),
-    componentLoader,
-  })
-} 
+  adminJsOptions.databases = [new Database({ client: prisma })]
+  adminJsOptions.resources = createAdminResources(prisma)
+
+  const admin = new AdminJS(adminJsOptions)
+
+  // ไม่ preload cache
+//  await preloadComponents()
+
+  return admin
+}
+
+// ========================================
+// PERFORMANCE MONITORING
+// ========================================
+export const monitorAdminJS = (admin) => {
+  try {
+    const startTime = Date.now()
+    admin.watch() // ✅ dev hot reload
+    const endTime = Date.now()
+
+    console.log(`⚡ AdminJS Loading Time: ${endTime - startTime}ms`)
+    console.log(`🚀 AdminJS running in ${process.env.NODE_ENV || 'development'} mode`)
+    console.log(`📊 Total Resources: ${adminJsOptions.resources?.length || 0}`)
+    console.log(`🔧 Component Loader Status: ${componentLoader ? 'Active' : 'Inactive'}`)
+    console.log(`🌐 Locale: ${options.locale?.language || 'th'}`)
+    console.log(`🎨 Theme: ${options.defaultTheme || 'default'}`)
+  } catch (error) {
+    console.warn('⚠️ AdminJS monitoring error:', error.message)
+  }
+}
