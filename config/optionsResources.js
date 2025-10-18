@@ -63,6 +63,8 @@ const options = {
   assets: {
     styles: [
       '/public/css/admin-custom.css', // Fixed typo in path
+      '/public/css/test.css',
+      'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', // Leaflet CSS
     ] 
   },
 }

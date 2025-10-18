@@ -1,54 +1,110 @@
-import React, { useEffect } from "react"
+import React from "react"
 import MapField from "./mapfild"
-import { useMapStore } from "./lib/store"
+import styled from "styled-components"
+import { Box, Text } from "@adminjs/design-system"
+
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  margin-top: 24px;
+`
+
+const Header = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 12px;
+  text-align: center;
+`
+
+const Coordinates = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f8fafc;
+  padding: 12px 20px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-size: 15px;
+  color: #334155;
+
+  strong {
+    color: #0f172a;
+  }
+`
+
+const MapWrapper = styled.div`
+  width: 100%;
+  max-width: 900px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+`
 
 const ShowMap = ({ record, property }) => {
-  // ✅ record & property ถูกส่งจาก AdminJS เวลา render show view
-  const { latitude, longitude, data, colors, id } = record?.params || {}
+  const { latitude, longitude, data, colors, geom_geojson } = record?.params || {}
 
-  // 👉 preload: ส่งเฉพาะ data ปัจจุบันให้ MapField ตาม API ล่าสุด
   const preload = { data }
 
-  // 👉 callback เวลา field มีการเปลี่ยนค่า (ถ้าอยาก log หรือ debug)
   const handleMapChange = (field, value) => {
     console.log("🔄 Changed:", field, value)
   }
 
-  // ✅ sync store กับค่าปัจจุบันจาก record เพื่อให้ marker/center ตรงกันกับ MapField
-  const setLatLng = useMapStore((s) => s.setLatLng)
-  const setColors = useMapStore((s) => s.setColors)
-  useEffect(() => {
-    const lat = Number(latitude)
-    const lng = Number(longitude)
-    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
-      setLatLng(lat, lng)
-    }
-    if (colors) {
-      setColors(colors)
-    }
-  }, [latitude, longitude, colors, setLatLng, setColors])
+  console.log('🗺️ ShowMap rendering with:', {
+    latitude,
+    longitude,
+    data,
+    colors,
+    geom_geojson,
+    record: record?.params
+  })
 
   return (
-    <div>
-      <h2 className="text-lg font-semibold mb-2">
-        แผนที่โซน (ID: {id})
-      </h2>
+    <Box mb="lg">
+      <Header>🗺️ แผนที่โซน</Header>
 
-      {/* 🛰️ แสดงพิกัด */}
-      <p className="text-gray-700 mb-4">
-        <strong>Latitude:</strong> {latitude || "—"} <br />
-        <strong>Longitude:</strong> {longitude || "—"}
-      </p>
+      <Coordinates>
+        <div>
+          <strong>Latitude:</strong> {latitude || "—"}
+        </div>
+        <div>
+          <strong>Longitude:</strong> {longitude || "—"}
+        </div>
+        {data && (
+          <div>
+            <strong>GeoJSON Data:</strong> {data.type || "Unknown"}
+            {data.features && (
+              <span> ({data.features.length} features)</span>
+            )}
+          </div>
+        )}
+        {geom_geojson && (
+          <div>
+            <strong>Geometry:</strong> {JSON.parse(geom_geojson).type || "Unknown"}
+          </div>
+        )}
+      </Coordinates>
 
-      {/* 🗺️ Map */}
-      <MapField
-        onChange={handleMapChange}
-        record={record}
-        preload={preload}
-        mode="show"
-      />
+   
+        <MapField
+          latitude={latitude}
+          longitude={longitude}
+          data={data}
+          colors={colors}
+          onChange={handleMapChange}
+          record={record}
+          preload={preload}
+          mode="show"
+          draggable={false}
+        />
 
-    </div>
+    </Box>
   )
 }
 

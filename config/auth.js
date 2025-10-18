@@ -72,29 +72,18 @@ export function verifyToken(token) {
  */
 export async function authenticateUser(email, password) {
   try {
-    // ค้นหาผู้ใช้จากอีเมล
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: {
-        roles: {
-          include: {
-            role: {
-              include: {
-                permissions: {
-                  include: {
-                    permission: true
-                  }
-                }
-              }
-            }
-          }
-        },
-        department: true
+    // ค้นหาผู้ใช้จากอีเมลหรือ username
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: email },
+          { username: email }
+        ]
       }
     })
 
-    // ตรวจสอบว่าผู้ใช้มีอยู่และยังใช้งานอยู่
-    if (!user || !user.isActive) {
+    // ตรวจสอบว่าผู้ใช้มีอยู่
+    if (!user) {
       return { success: false, message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' }
     }
 
@@ -104,12 +93,6 @@ export async function authenticateUser(email, password) {
       return { success: false, message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' }
     }
 
-    // อัปเดตเวลาล็อกอินล่าสุด
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() }
-    })
-
     // สร้าง token
     const token = generateToken({
       userId: user.id,
@@ -117,21 +100,17 @@ export async function authenticateUser(email, password) {
       username: user.username
     })
 
-    // ดึงข้อมูล roles และ permissions
-    const userRolesAndPermissions = await getUserRolesAndPermissions(user.id)
-
     return {
       success: true,
       user: {
         id: user.id,
         email: user.email,
         username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        employeeId: user.employeeId,
-        department: user.department,
-        roles: userRolesAndPermissions.roles,
-        permissions: userRolesAndPermissions.permissions
+        fullName: user.fullName,
+        title_use: user.title_use,
+        position: user.position,
+        phone: user.phone,
+        role: user.role
       },
       token
     }

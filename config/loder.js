@@ -3,15 +3,19 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 
+/* -----------------------------------------------------
+ * 📁 PATH & ENVIRONMENT SETUP
+ * --------------------------------------------------- */
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
 const isProd = process.env.NODE_ENV === 'production'
 
-// ✅ ComponentLoader ที่เลือกเปิด/ปิด cache ตาม env
+/* -----------------------------------------------------
+ * ⚙️ CONFIGURE COMPONENT LOADER
+ * --------------------------------------------------- */
 const componentLoader = new ComponentLoader({
   bundler: {
-    enabled: true, // ✅ ให้ bundler ทำงานทั้ง dev/prod
+    enabled: true, // ใช้ bundler ทั้ง dev / prod
     webpack: {
       optimization: {
         splitChunks: {
@@ -30,31 +34,33 @@ const componentLoader = new ComponentLoader({
             },
           },
         },
-        minimize: isProd, // ✅ minimize เฉพาะ prod
+        minimize: isProd, // minimize เฉพาะตอน production
       },
       cache: isProd
         ? {
             type: 'filesystem',
             buildDependencies: { config: [__filename] },
           }
-        : false, // ❌ dev ปิด cache
+        : false, // ปิด cache ใน dev
     },
   },
 })
 
+/* -----------------------------------------------------
+ * 🧩 HELPER FUNCTIONS
+ * --------------------------------------------------- */
 
-// ✅ ฟังก์ชัน add component พร้อม error handling
+// ✅ เพิ่ม Component ใหม่
 const addComponent = (id, relativePath) => {
   try {
     const fullPath = path.resolve(__dirname, relativePath)
     console.log(`📦 Loading component: ${id} from ${fullPath}`)
-    
-    // ตรวจสอบว่าไฟล์มีอยู่จริงหรือไม่
+
     if (!fs.existsSync(fullPath)) {
       console.error(`❌ File not found: ${fullPath}`)
       return null
     }
-    
+
     const component = componentLoader.add(id, fullPath)
     console.log(`✅ Successfully loaded component: ${id}`)
     return component
@@ -66,6 +72,7 @@ const addComponent = (id, relativePath) => {
   }
 }
 
+// ✅ Override component เดิมของ AdminJS
 const addComponent2 = (id, relativePath) => {
   try {
     const fullPath = path.resolve(__dirname, relativePath)
@@ -77,34 +84,81 @@ const addComponent2 = (id, relativePath) => {
   }
 }
 
-// ✅ เพิ่ม custom components พร้อม logging
+/* -----------------------------------------------------
+ * 🧱 REGISTER CUSTOM COMPONENTS
+ * --------------------------------------------------- */
+
+// 🏠 Dashboard
+const Dashboard = addComponent('Dashboard', '../src/components/dashboard.jsx')
+
+// 👥 Owner Components
+  /* const OwnerShow = addComponent('OwnerShow', '../src/components/owner.jsx')
+  const RadioOwner = addComponent('RadioOwner', '../src/components/ownerui/radioOwner.jsx')
+  const OwnerTitleCell = addComponent('OwnerTitleCell', '../src/components/featureUi/sideCellowner.jsx') */
+
+// 📍 Address Components
+/* const AddressSelect = addComponent('AddressSelect', '../src/components/featureUi/addresse/address_provin.jsx')
+const AddressAmphoe = addComponent('AddressAmphoe', '../src/components/featureUi/addresse/address_amp.jsx')
+const AddressTumbon = addComponent('AddressTumbon', '../src/components/featureUi/addresse/address_tumbon.jsx') */
+
+// 🔐 Auth Components
+/* const Login = addComponent2('Login', '../src/components/Login.jsx')
+const ForgotPassword = addComponent('ForgotPassword', '../src/components/ForgotPassword.jsx')
+const ResetPassword = addComponent('ResetPassword', '../src/components/ResetPassword.jsx') */
+
+// 📅 Filter Components
+/* const DefaultDatetimeFilterProperty = addComponent2(
+  'DefaultDatetimeFilterProperty',
+  '../src/components/featureUi/DefaultDatetimeFilterProperty.jsx'
+) */
+
+// featureUi Components
+/*  const FullNameBadge = addComponent('FullNameBadge', '../src/components/featureUi/badge/fullNameBadge.jsx')
+ const YearBadge = addComponent('YearBadge', '../src/components/featureUi/badge/yearBadge.jsx') */
 
 
-/* ----------------- Dashboard ----------------- */
-// const Dashboard = addComponent('Dashboard', '../src/page/dashboard.jsx')
-
-/* ----------------- Owner ----------------- */
- const OwnerShow = addComponent('OwnerShow', '../src/page/show_owner.jsx')  
-
-/* ----------------- Map ----------------- */
+ // Map Components
+ const ShowMap = addComponent('ShowMap', '../src/components/map/show_map.jsx')
+ const Map = addComponent('Map', '../src/components/Map.jsx')
+/*  const TestMap = addComponent('TestMap', '../src/testmap/testmap.jsx')
+ const ViewKml = addComponent('ViewKml', '../src/components/testmap/viewkml.jsx') */
  
-const Map = addComponent('Map', '../src/page/Map.jsx')
-const ShowMap = addComponent('ShowMap', '../src/components/map/show_map.jsx')
-/* ----------------- File Handling ----------------- */
-const FileUrlPreview = addComponent('FileUrlPreview', '../src/components/featureUi/FileUrlPreview.jsx')
-const FileUploadEdit = addComponent('FileUploadEdit', '../src/components/featureUi/FileUploadEdit.jsx')
+ // Data Display Components
+ /* const DataDisplay = addComponent('DataDisplay', '../src/components/featureUi/DataDisplay.jsx') */
+ const MapField = addComponent('MapField', '../src/components/featureUi/MapField.jsx')
+/* -----------------------------------------------------
+ * 📦 EXPORTS
+ * --------------------------------------------------- */
+export {
+  componentLoader,
+  addComponent,
+  addComponent2,
 
- const Showupload = addComponent('Showupload', '../src/components/featureUi/Showupload.jsx') 
+  // Components
+  Dashboard,
+ /*  OwnerShow,
+  RadioOwner,
+  OwnerTitleCell,
 
- const Dashboard = addComponent('Dashboard', '../src/page/dashboard.jsx')
- const UploadFile = addComponent('UploadFile', '../src/components/featureUi/upload_file.jsx')
-/* ----------------- Control / Stats ----------------- */
-/*  const control_show = addComponent('control_show', '../src/components/featureUi/show_control.jsx') 
- const select_stats = addComponent('select_stats', '../src/components/featureUi/select_stats.jsx')  */ 
+  AddressSelect,
+  AddressAmphoe,
+  AddressTumbon,
 
+  Login,
+  ForgotPassword,
+  ResetPassword,
 
-// ✅ ฟังก์ชันสำหรับ preload components
-/* const preloadComponents = async () => {
+  DefaultDatetimeFilterProperty,
+  FullNameBadge,
+  YearBadge, */
+  ShowMap,
+  Map,
+/*   TestMap,
+  ViewKml,
+  DataDisplay, */
+  MapField
+}
+/* const preloadComponents = async () => { 
   try {
     console.log('🔄 Preloading components...')
     
@@ -121,20 +175,4 @@ const FileUploadEdit = addComponent('FileUploadEdit', '../src/components/feature
   } catch (error) {
     console.warn('⚠️ Component preloading error:', error.message)
   }
-} */
-
-export {
-  componentLoader,
-  addComponent,
-  addComponent2,
-  Dashboard,
- // preloadComponents,
-  // Export individual components for direct use
-  FileUrlPreview,
-  FileUploadEdit,
-  ShowMap, 
-  Map,
-  OwnerShow,
-  Showupload,
-  UploadFile
-}
+}*/

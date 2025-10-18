@@ -1,6 +1,10 @@
 import titles from './keepdata/titles.js'
+
 import { ValidationError } from "adminjs"
+import { joinString , getProvinces , getAmphoes } from './owner/joinString.js'
 import { createPrismaClient } from '../config/database.js'
+import { backButton } from './feature/back-button.js'
+
 const prisma = createPrismaClient()
 
 const validateCitizenId = async (request, context) => {
@@ -41,17 +45,41 @@ const validateCitizenId = async (request, context) => {
 }
 
 
+
 const options_owner = {
     navigation: {
         name: 'เจ้าของกรรมสิทธิ์',
         icon: 'User',
     },
+    listProperties: [
+      'title_owner',
+      'first_name',
+      'last_name',
+      'number_no',
+      'phone',
+      'no_id',
+      'address',
+      'org_name',
+      'org_address',
+     ],
+    filterProperties: [
+      'first_name',
+      'last_name',
+      'number_no',
+      'phone',
+      'province',
+      'district',
+      'subdistrict',
+      'org_name'
+    ],
+    
     properties: {
         title_owner: {
             type: 'text',
             isRequired: true,
               availableValues: titles ,// เอา array มาใส่ตรง ๆ
             props: { placeholder: 'เลือกคำนำหน้า' },
+            components: { list: 'OwnerTitleCell' },
             },
                 first_name: {
                     type: 'text',
@@ -75,31 +103,66 @@ const options_owner = {
                     placeholder: 'กรอกเฉพาะตัวเลข 8–10 หลัก',
                     pattern: '^\\d{8,10}$', // 👈 regex ให้ตรง
                     title: 'กรุณากรอกหมายเลขโทรศัพท์ 8–10 หลัก'
+                 
                   },
                 },
+                owner_type: {
+                  components: { edit: 'RadioOwner' },
+                  type: 'string',
+                },
+                
                 no_id: {
                     type: 'number',
                     isRequired: true,
                     props: { placeholder: 'กรอกเฉพาะตัวเลข' },
                 },
+                address: {
+                  isVisible: { list: true, show: true, edit: true, filter: true },
+                  type: 'richtext', // ใช้ TipTap editor
+                
+                },
                 road: {
                     type: 'text',
                   
                 },
-                subdistrict: {
-                    type: 'text',
-                   
+                //ตำบล
+                subdistrict: {    
+                  isVisible: { list: false, show: true, edit: false, filter: false },          
+                    type: 'string',   // ต้องเป็น string     
+                    components: { edit: 'AddressTumbon' },
                 },
+                //อำเภอ
                 district: {
-                    type: 'text',
-                    
-                },
-                province: {
-                    type: 'text',
-                    
-                },
+                  components: { edit: 'AddressAmphoe' },
+                    type: 'string',   
+                   isVisible: { list: false, show: true, edit: false, filter: false },
+                    props: { 
+                        placeholder: 'ค้นหาอำเภอ/เขต',  
+                    },
+                  },
+                  //จังหวัด
+                 /*  province: {
+                    type: 'string',   // 👈 ต้องเป็น string
+                    components: { edit: 'AddressSelect' },
+                    props: { 
+                      placeholder: 'ค้นหาจังหวัด',
+                    }
+                  }, */
+                  province: {
+                    components: { edit: 'AddressSelect' },
+                    type: 'string',
+                    props: {
+                      placeholder: 'ค้นหาจังหวัด',
+                   
+                    }
+                  },
+                 
                 postcode: {
-                    type: 'number',
+                    type: 'text',
+                    props: { 
+                        placeholder: 'ค้นหารหัสไปรษณีย์',
+           
+                    },
                 },
                 org_name: {
                     type: 'text',
@@ -115,6 +178,7 @@ const options_owner = {
                 },
   },
   actions: {
+backButton,
     new: {
       before: [validateCitizenId],
       layout: [
@@ -128,6 +192,7 @@ const options_owner = {
           [{ flexDirection: 'row', flex: true, gap: 'sm' }, [
             ['number_no', { flexGrow: 1, pr: 'default' }],
             ['phone', { flexGrow: 1, pr: 'default' }],
+            ['owner_type', { flexGrow: 1, pr: 'default' }],
           
           ]],
           ['@H3', { children: 'ที่อยู่' }],
@@ -161,7 +226,7 @@ const options_owner = {
           [{ flexDirection: 'row', flex: true, gap: 'sm' }, [
             ['number_no', { flexGrow: 1, pr: 'default' }],
             ['phone', { flexGrow: 1, pr: 'default' }],
-          
+            ['owner_type', { flexGrow: 1, pr: 'default' }],
           ]],
           ['@H3', { children: 'ที่อยู่' }],
           [{ flexDirection: 'row', flex: true, gap: 'sm' }, [
@@ -172,7 +237,7 @@ const options_owner = {
           ]],
           [{ flexDirection: 'row', flex: true, gap: 'sm' }, [
             ['district', { flexGrow: 1, pr: 'default' }],
-            ['province', { flexGrow: 1, pr: 'default' }],
+            ['province',  { flexGrow: 1, pr: 'default' }],
             ['postcode', { flexGrow: 1 }],
           ]],
           ['@H3', { children: 'ข้อมูลองค์กร' }],
@@ -185,6 +250,7 @@ const options_owner = {
       component: 'OwnerShow',
     },
     delete: { isAccessible: true },
+    list:{after: joinString},
   },
 }
 export default options_owner;

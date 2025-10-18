@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KML/GeoJSON Import API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 200px;
+            font-family: monospace;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.danger {
+            background-color: #dc3545;
+        }
+        button.danger:hover {
+            background-color: #c82333;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 KML/GeoJSON Import API Test</h1>
+    
+    <div class="container">
+        <h2>API Endpoints</h2>
+        <p><strong>Base URL:</strong> <code>http://localhost:3002/api/test-kml-import</code></p>
+        <ul>
+            <li><code>POST /import</code> - Import GeoJSON data</li>
+            <li><code>GET /sample-data</code> - Get sample data from database</li>
+            <li><code>GET /test-records</code> - Get test records</li>
+            <li><code>DELETE /cleanup</code> - Clean up test records</li>
+        </ul>
+    </div>
+
+    <div class="grid">
+        <div class="container">
+            <h2>Import GeoJSON Data</h2>
+            <form id="importForm">
+                <div class="form-group">
+                    <label for="latitude">Latitude:</label>
+                    <input type="number" id="latitude" step="any" value="17.473624316" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="longitude">Longitude:</label>
+                    <input type="number" id="longitude" step="any" value="101.810061695" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="name_local">Name Local:</label>
+                    <input type="text" id="name_local" value="Test LineString from Web" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="house_no">House No:</label>
+                    <input type="text" id="house_no" value="123">
+                </div>
+                
+                <div class="form-group">
+                    <label for="road">Road:</label>
+                    <input type="text" id="road" value="Test Road">
+                </div>
+                
+                <div class="form-group">
+                    <label for="subdistrict">Subdistrict:</label>
+                    <input type="text" id="subdistrict" value="Test Subdistrict">
+                </div>
+                
+                <div class="form-group">
+                    <label for="district">District:</label>
+                    <input type="text" id="district" value="Test District">
+                </div>
+                
+                <div class="form-group">
+                    <label for="province">Province:</label>
+                    <input type="text" id="province" value="Test Province">
+                </div>
+                
+                <div class="form-group">
+                    <label for="postcode">Postcode:</label>
+                    <input type="text" id="postcode" value="12345">
+                </div>
+                
+                <div class="form-group">
+                    <label for="colors">Colors:</label>
+                    <input type="color" id="colors" value="#ff0000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="buildingControlId">Building Control ID (optional):</label>
+                    <input type="number" id="buildingControlId" placeholder="Leave empty to create new">
+                </div>
+                
+                <div class="form-group">
+                    <label for="geojsonData">GeoJSON Data:</label>
+                    <textarea id="geojsonData" required>{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [101.810061695, 17.473624316, 0],
+          [101.8130352745, 17.4759990108, 0]
+        ]
+      },
+      "properties": {
+        "fill-opacity": 0,
+        "stroke-opacity": 1,
+        "stroke": "#ff0000",
+        "descriptio": "SIDESHOT_LINE_HIDE",
+        "tessellate": -1,
+        "extrude": 0,
+        "visibility": true
+      }
+    }
+  ]
+}</textarea>
+                </div>
+                
+                <button type="submit">Import GeoJSON</button>
+            </form>
+            
+            <div id="importResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="container">
+            <h2>API Actions</h2>
+            
+            <button onclick="getSampleData()">Get Sample Data</button>
+            <button onclick="getTestRecords()">Get Test Records</button>
+            <button onclick="cleanupTestRecords()" class="danger">Cleanup Test Records</button>
+            
+            <div id="actionResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3002/api/test-kml-import';
+
+        // Import form submission
+        document.getElementById('importForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                latitude: parseFloat(document.getElementById('latitude').value),
+                longitude: parseFloat(document.getElementById('longitude').value),
+                name_local: document.getElementById('name_local').value,
+                house_no: document.getElementById('house_no').value,
+                road: document.getElementById('road').value,
+                subdistrict: document.getElementById('subdistrict').value,
+                district: document.getElementById('district').value,
+                province: document.getElementById('province').value,
+                postcode: document.getElementById('postcode').value,
+                colors: document.getElementById('colors').value,
+                data: document.getElementById('geojsonData').value
+            };
+
+            const buildingControlId = document.getElementById('buildingControlId').value;
+            if (buildingControlId) {
+                formData.buildingControlId = parseInt(buildingControlId);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/import`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                showResult('importResult', result, result.success ? 'success' : 'error');
+            } catch (error) {
+                showResult('importResult', { error: error.message }, 'error');
+            }
+        });
+
+        // Get sample data
+        async function getSampleData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/sample-data`);
+                const result = await response.json();
+                showResult('actionResult', result, result.success ? 'success' : 'error');
+            } catch (error) {
+                showResult('actionResult', { error: error.message }, 'error');
+            }
+        }
+
+        // Get test records
+        async function getTestRecords() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/test-records`);
+                const result = await response.json();
+                showResult('actionResult', result, result.success ? 'success' : 'error');
+            } catch (error) {
+                showResult('actionResult', { error: error.message }, 'error');
+            }
+        }
+
+        // Cleanup test records
+        async function cleanupTestRecords() {
+            if (!confirm('Are you sure you want to delete all test records?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/cleanup`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                showResult('actionResult', result, result.success ? 'success' : 'error');
+            } catch (error) {
+                showResult('actionResult', { error: error.message }, 'error');
+            }
+        }
+
+        // Show result
+        function showResult(elementId, data, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(data, null, 2);
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+        }
+
+        // Load sample data on page load
+        window.addEventListener('load', () => {
+            getSampleData();
+        });
+    </script>
+</body>
+</html>

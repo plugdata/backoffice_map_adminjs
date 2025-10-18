@@ -1,5 +1,6 @@
 import titles from './keepdata/titles.js'
-
+import { addFullName } from './user/joinString.js'
+import { backButton } from './feature/back-button.js'
 
 const options_user = {
     navigation: {
@@ -9,8 +10,9 @@ const options_user = {
     listProperties: [
       'id',          // ซ่อนหรือแสดงก็ได้
       'username',
-      'title_use',
-      'fullName',
+    //  'title_use',
+     // 'fullName',
+      'title_fullname',
       'position',
       'email',
       'phone',
@@ -19,6 +21,14 @@ const options_user = {
     showProperties: [
       'id',          // ซ่อนหรือแสดงก็ได้
       'username',
+      'title_use',
+      'fullName',
+      'position',
+      'email',
+      'phone',
+      'role',
+    ],
+    filterProperties: [
       'title_use',
       'fullName',
       'position',
@@ -45,6 +55,10 @@ const options_user = {
         isRequired: true,
         availableValues: titles ,// เอา array มาใส่ตรง ๆ
         props: { placeholder: 'เลือกคำนำหน้า' },
+      },
+      title_fullname: {
+       isVisible: { list: true, show: true, edit: true, filter: false },
+     
       },
       fullName: { type: 'text' ,  isTitle: true,  },
       position: { type: 'text' , },
@@ -83,7 +97,7 @@ const options_user = {
               ['username', { flexGrow: 1, pr: 'default' }],
               ['password', { flexGrow: 1 }],
             ]],
-            ['@H3', { children: 'ข้อมูลติดต่อ' }],
+            ['@H3', { children: 'ข้อมูลเจ้าหน้าที่' }],
             [{ flexDirection: 'row', flex: true }, [
               ['title_use', { width: '20%' , pr: 'default'}],      // 20% ของแถว
               ['fullName',  { width: '40%' , pr: 'default' }],      // 40% ของแถว
@@ -109,7 +123,7 @@ const options_user = {
               ['username', { flexGrow: 1, pr: 'default' }],
               ['password', { flexGrow: 1 }],
             ]],
-            ['@H3', { children: 'ข้อมูลติดต่อ' }],
+            ['@H3', { children: 'ข้อมูลเจ้าหน้าที่' }],
             [{ flexDirection: 'row', flex: true }, [
             ['title_use', { flexGrow: 1, pr: 'default' }],
             ['fullName', { flexGrow: 1, pr: 'default' }],
@@ -126,11 +140,38 @@ const options_user = {
         ],
        
       },
- /*      show:{
-   
-      }, */
+       show:{
+       /*  component: 'ShowUser', */
+       layout: [
+        [{ width: 3 / 3, mx: 'auto' }, [
+          ['@H3', { children: 'ข้อมูลบัญชี' }],
+          [{ flexDirection: 'row', flex: true }, [
+            ['username', { flexGrow: 1, pr: 'default' }],
+          ]],
+          ['@H3', { children: 'ข้อมูลเจ้าหน้าที่' }],
+          [{ flexDirection: 'row', flex: true }, [
+          ['title_use', { flexGrow: 1, pr: 'default' }],
+          ['fullName', { flexGrow: 1, pr: 'default' }],
+          ['position', { flexGrow: 1, pr: 'default' }],
+          ]],
+          [{ flexDirection: 'row', flex: true }, [
+            ['email', { flexGrow: 1, pr: 'default' }],
+            ['phone', { flexGrow: 1, pr: 'default' }],
+            ['address', { flexGrow: 1 }],
+          ]],
+          ['@H3', { children: 'สิทธิ์ผู้ใช้งาน' }],
+          'role',
+        ]],
+      ],
+        }, 
       delete: { isAccessible: true },
-  
+
+      list: { after: addFullName },   // ✅ ใส่ใน action ไม่ใช่ property
+    
+    
+      backButton,
+      
+      
     },
 
   }

@@ -14,18 +14,20 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  password  String
-  title_use String
-  fullName  String
-  address   String?
-  position  String?
-  email     String?  @unique
-  phone     String?
-  role      String
-  createdAt DateTime @default(now())
-  owners    Owner[]
+  id                Int       @id @default(autoincrement())
+  username          String    @unique
+  password          String
+  title_use         String
+  fullName          String
+  address           String?
+  position          String?
+  email             String?   @unique
+  phone             String?
+  role              String
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  createdAt         DateTime  @default(now())
+  owners            Owner[]
 }
 
 model Owner {
@@ -43,6 +45,7 @@ model Owner {
   org_name    String?
   org_address String?
   user_id     Int?
+  owner_type  String?
   created_at  DateTime @default(now())
   number_no   String?  @unique
   user        User?    @relation(fields: [user_id], references: [id])
@@ -155,16 +158,13 @@ model Map {
   zoningPlanId      Int?             @unique
   name_local        String?
   house_no          String?
-  road              String?
-  subdistrict       String?
-  district          String?
-  province          String?
-  postcode          String?
+  address           String?
   latitude          Float?
   longitude         Float?
   colors            String?
   data              Json?
-  geom              Unsupported("geometry")
+  geom Unsupported("geometry")?
+
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt
   buildingControl   BuildingControl? @relation(fields: [buildingControlId], references: [id])
@@ -176,10 +176,14 @@ model Map {
   @@index([zoningPlanId])
 }
 
-model WorkTopic {
-  id         Int      @id @default(autoincrement())
-  category   String   @db.VarChar(50)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  title_work String   @db.VarChar(255)
+model districts {
+  id             Int      @id @default(autoincrement())
+  district_code  String
+  province       String
+  amphoe         String
+  district       String
+  zipcode        String
+  province_code  String
+  amphoe_code    String
 }
+

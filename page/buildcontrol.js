@@ -2,9 +2,7 @@
 import { getStatusAvailableValues, getFullname, getFiscalYear } from './buildingControl/helpers.js'
 import { actions_buildcontrol } from './buildingControl/actions.js'
 
-console.log(getStatusAvailableValues())
-console.log(getFullname())
-console.log(getFiscalYear())
+
 const options_buildcontrol = {
   navigation: {
     name: 'ฝ่ายควบคุมอาคาร',
@@ -67,18 +65,21 @@ const options_buildcontrol = {
     }, */
     uploadfile: {
       type: 'mixed',
-      components: { edit: 'UploadFile' , show: 'Showupload' },
+      //components: { edit: 'UploadFile' , show: 'Showupload' },
       isVisible: { list: false, show: false, edit: true, filter: false },
     },
-    map: {
+     map: {
       isVisible: { list: false, show: true, edit: true, filter: false },
-      components: {  edit: 'Map', show: 'ShowMap' },
-    },
+     
+      components: {  show: 'ShowMap' , edit:'Map'},
+    }, 
+    
      // 📅 ปีงบประมาณ
      fiscalYearId: {
       type: 'select',
       availableValues: await getFiscalYear(),
       isVisible: { list: true, show: true, edit: true, filter: true },
+    //  components: { list: 'YearBadge' , show: 'YearBadge' },
     },
    
     // 👤 เจ้าของ
@@ -86,6 +87,7 @@ const options_buildcontrol = {
       type: 'select',
       availableValues: await getFullname(),
       isVisible: { list: true, show: true, edit: true, filter: true },
+  //    components: { list: 'FullNameBadge' , show: 'FullNameBadge' },
     },
 
   

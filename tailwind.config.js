@@ -5,7 +5,8 @@ export default {
     './public/**/*.{html,js}',
     './src/**/*.{js,jsx,ts,tsx}',  
     './src/page/**/*.{js,jsx,ts,tsx}', 
-    './src/components/**/*.{js,jsx,ts,tsx}',       // ✅ ครอบคลุม src directory
+    './src/components/**/*.{js,jsx,ts,tsx}',
+    './src/components/dashboard/**/*.{js,jsx,ts,tsx}',       // ✅ ครอบคลุม src directory
     './node_modules/@adminjs/design-system/**/*.{js,jsx,ts,tsx}',
     './node_modules/adminjs/**/*.{js,jsx,ts,tsx}',
   ],

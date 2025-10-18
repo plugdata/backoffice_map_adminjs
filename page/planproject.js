@@ -1,3 +1,5 @@
+import { backButton } from "./feature/back-button.js"
+
 const options_planproject = {
     navigation: {
         name: 'ฝ่ายควบคุมการก่อสร้าง',
@@ -23,6 +25,7 @@ const options_planproject = {
         },
     },
     actions: {
+        backButton,
         new: { showInDrawer: true },
         edit: { showInDrawer: true },
         show: { showInDrawer: true },

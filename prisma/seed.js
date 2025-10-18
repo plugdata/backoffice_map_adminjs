@@ -89,11 +89,26 @@ async function main() {
   console.log('🗑️ Cleaned existing data')
 
   // Users
-  let admin, officer, viewer
+  let admin, officer, viewer, testAdmin
   try {
-    admin = await prisma.user.create({
+    // Test admin user with password "12345"
+    testAdmin = await prisma.user.create({
       data: {
         username: 'admin',
+        password: await bcrypt.hash('12345', 10),
+        title_use: 'นาย',
+        fullName: 'ผู้ดูแลระบบ (ทดสอบ)',
+        email: 'admin@test.com',
+        phone: '0811111111',
+        role: 'admin',
+        position: 'ผู้ดูแลระบบ',
+        address: '123 ถนนราชดำเนิน กรุงเทพฯ'
+      }
+    })
+
+    admin = await prisma.user.create({
+      data: {
+        username: 'admin123',
         password: await bcrypt.hash('admin123', 10),
         title_use: 'นาย',
         fullName: 'ผู้ดูแลระบบ',
@@ -528,19 +543,23 @@ async function main() {
   // console.log('✅ Created KML data')
 
   // WorkTopic
-  const workTopics = [
-    { title_work: 'จัดทำรายงานสิ่งแวดล้อม', category: 'Environment' },
-    { title_work: 'สำรวจพื้นที่เสี่ยง', category: 'Survey' },
-    { title_work: 'วางแผนการพัฒนา', category: 'Planning' },
-    { title_work: 'ติดตามโครงการ', category: 'Monitoring' },
-    { title_work: 'ประเมินผลกระทบ', category: 'Assessment' }
-  ]
+  try {
+    const workTopics = [
+      { title_work: 'จัดทำรายงานสิ่งแวดล้อม', category: 'Environment' },
+      { title_work: 'สำรวจพื้นที่เสี่ยง', category: 'Survey' },
+      { title_work: 'วางแผนการพัฒนา', category: 'Planning' },
+      { title_work: 'ติดตามโครงการ', category: 'Monitoring' },
+      { title_work: 'ประเมินผลกระทบ', category: 'Assessment' }
+    ]
 
-  for (const topic of workTopics) {
-    await prisma.workTopic.create({ data: topic })
+    for (const topic of workTopics) {
+      await prisma.workTopic.create({ data: topic })
+    }
+
+    console.log('✅ Created work topics')
+  } catch (error) {
+    console.log('⚠️ WorkTopic table does not exist, skipping work topics creation...')
   }
-
-  console.log('✅ Created work topics')
 
   // Uploads
   for (let i = 0; i < 20; i++) {
@@ -566,28 +585,41 @@ async function main() {
   console.log('✅ Created uploads')
 
   // Final statistics
-  const totalUsers = await prisma.user.count()
-  const totalOwners = await prisma.owner.count()
-  const totalBuildingControls = await prisma.buildingControl.count()
-  const totalRiskZones = await prisma.riskZone.count()
-  const totalZoningPlans = await prisma.zoningPlan.count()
-  const totalPlanProjects = await prisma.planProject.count()
-  const totalApprovedProjects = await prisma.approvedProject.count()
-  const totalMaps = await prisma.map.count()
-  const totalUploads = await prisma.uploads.count()
-  const totalWorkTopics = await prisma.workTopic.count()
+  try {
+    const totalUsers = await prisma.user.count()
+    const totalOwners = await prisma.owner.count()
+    const totalBuildingControls = await prisma.buildingControl.count()
+    const totalRiskZones = await prisma.riskZone.count()
+    const totalZoningPlans = await prisma.zoningPlan.count()
+    const totalPlanProjects = await prisma.planProject.count()
+    const totalApprovedProjects = await prisma.approvedProject.count()
+    const totalMaps = await prisma.map.count()
+    const totalUploads = await prisma.uploads.count()
 
-  console.log('📊 Database seeded successfully!')
-  console.log(`👥 Users: ${totalUsers}`)
-  console.log(`🏠 Owners: ${totalOwners}`)
-  console.log(`🏢 Building Controls: ${totalBuildingControls}`)
-  console.log(`⚠️ Risk Zones: ${totalRiskZones}`)
-  console.log(`🏘️ Zoning Plans: ${totalZoningPlans}`)
-  console.log(`📋 Plan Projects: ${totalPlanProjects}`)
-  console.log(`✅ Approved Projects: ${totalApprovedProjects}`)
-  console.log(`🗺️ Maps: ${totalMaps}`)
-  console.log(`📁 Uploads: ${totalUploads}`)
-  console.log(`📝 Work Topics: ${totalWorkTopics}`)
+    console.log('📊 Database seeded successfully!')
+    console.log(`👥 Users: ${totalUsers}`)
+    console.log(`🏠 Owners: ${totalOwners}`)
+    console.log(`🏢 Building Controls: ${totalBuildingControls}`)
+    console.log(`⚠️ Risk Zones: ${totalRiskZones}`)
+    console.log(`🏘️ Zoning Plans: ${totalZoningPlans}`)
+    console.log(`📋 Plan Projects: ${totalPlanProjects}`)
+    console.log(`✅ Approved Projects: ${totalApprovedProjects}`)
+    console.log(`🗺️ Maps: ${totalMaps}`)
+    console.log(`📁 Uploads: ${totalUploads}`)
+    
+    // Test admin credentials
+    console.log('\n🔐 Test Admin Credentials:')
+    console.log('Username: admin')
+    console.log('Password: 12345')
+    console.log('Email: admin@test.com')
+  } catch (error) {
+    console.log('⚠️ Error getting final statistics:', error.message)
+    console.log('✅ Database seeded successfully!')
+    console.log('\n🔐 Test Admin Credentials:')
+    console.log('Username: admin')
+    console.log('Password: 12345')
+    console.log('Email: admin@test.com')
+  }
 }
 
 main()

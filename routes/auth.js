@@ -14,16 +14,80 @@ import {
   changePassword
 } from '../config/auth.js'
 import { getUserRolesAndPermissions } from '../utils/permissions.js'
+import forgotPasswordRoutes from './forgotPassword.js'
 
 const router = express.Router()
+
+// ========================================
+// FORGOT PASSWORD ROUTES
+// ========================================
+router.use('/', forgotPasswordRoutes)
 
 // ========================================
 // AUTHENTICATION ROUTES
 // ========================================
 
 /**
- * POST /api/auth/login
- * เข้าสู่ระบบ
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: เข้าสู่ระบบ
+ *     description: ใช้สำหรับการเข้าสู่ระบบด้วยอีเมลหรือชื่อผู้ใช้และรหัสผ่าน
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *           example:
+ *             email: "admin123"
+ *             password: "1234"
+ *     responses:
+ *       200:
+ *         description: เข้าสู่ระบบสำเร็จ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LoginResponse'
+ *             example:
+ *               success: true
+ *               message: "เข้าสู่ระบบสำเร็จ"
+ *               data:
+ *                 user:
+ *                   id: 5
+ *                   username: "admin123"
+ *                   email: "admin123@example.com"
+ *                   fullName: "ผู้ทดสอบระบบ"
+ *                   role: "admin"
+ *                 token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *       400:
+ *         description: ข้อมูลไม่ครบถ้วน
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               message: "กรุณากรอกอีเมลและรหัสผ่าน"
+ *       401:
+ *         description: ข้อมูลเข้าสู่ระบบไม่ถูกต้อง
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               message: "อีเมลหรือรหัสผ่านไม่ถูกต้อง"
+ *       500:
+ *         description: เกิดข้อผิดพลาดในระบบ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               message: "เกิดข้อผิดพลาดในการเข้าสู่ระบบ"
  */
 router.post('/login', async (req, res) => {
   try {

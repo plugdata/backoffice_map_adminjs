@@ -7,6 +7,7 @@ import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import cookieParser from 'cookie-parser'
+import session from 'express-session'
 
 // ตั้งค่า __dirname สำหรับ ES modules
 const __filename = fileURLToPath(import.meta.url)
@@ -22,6 +23,17 @@ export const createExpressApp = () => {
   // Middleware
   app.use(express.json())
   app.use(cookieParser())
+  
+  // Session middleware
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'adminjs-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    }
+  }))
   
   return app
 }

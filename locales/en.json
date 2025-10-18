@@ -6,7 +6,29 @@
     "dashboard": "Dashboard",
     "users": "Users",
     "documents": "Documents",
-    "settings": "Settings"
+    "settings": "Settings",
+    "loginWelcome": "Welcome to the system",
+    "forgotPasswordQuestion": "Trouble logging in?",
+    "forgotPassword": "Forgot password",
+    "forgotPasswordTitle": "Reset Password",
+    "forgotPasswordDescription": "Enter your email to receive a password reset link",
+    "forgotPasswordSuccess": "Password reset link has been sent to your email",
+    "forgotPasswordError": "Error sending password reset link",
+    "resetPasswordTitle": "Set New Password",
+    "resetPasswordDescription": "Enter your new password",
+    "resetPasswordSuccess": "Password has been reset successfully",
+    "resetPasswordSuccessDescription": "Your password has been updated. You can now log in with your new password.",
+    "resetPasswordError": "Error resetting password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "invalidResetToken": "Invalid or expired reset token",
+    "sendResetLink": "Send Reset Link",
+    "resetPassword": "Reset Password",
+    "sending": "Sending...",
+    "resetting": "Resetting...",
+    "backToLogin": "Back to Login"
   },
   "labels": {
     "email": "Email",
@@ -17,7 +39,8 @@
     "employeeId": "Employee ID",
     "isActive": "Active Status",
     "createdAt": "Created At",
-    "updatedAt": "Updated At"
+    "updatedAt": "Updated At",
+    "loginWelcome": "Welcome to the system"
   },
   "actions": {
     "create": "Create",
@@ -27,6 +50,9 @@
     "cancel": "Cancel",
     "search": "Search",
     "filter": "Filter"
+  },
+  "buttons": {
+    "login": "Login"
   },
   "status": {
     "active": "Active",

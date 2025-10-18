@@ -5,26 +5,27 @@
 // Load environment variables
 import dotenv from 'dotenv'
 dotenv.config()
-import multer from 'multer'
 import compression from 'compression'
 
 import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import bcrypt from 'bcryptjs'
 
 import { createExpressApp, setupStaticFiles, startServer } from './config/server.js'
 import { createPrismaClient } from './config/database.js'
 import { createAdminJS } from './config/admin.js'
 import AdminJSExpress from '@adminjs/express'
+import { adminAuth } from './middleware/adminAuth.js'
 
 // Routes
 import authRoutes from './routes/auth.js'
 import dashboardRoutes from './routes/dashboard.js'
 import uploadRoutes from './routes/upload.js'
-import mapRoutes from './routes/maprouter.js'
 import locationRoutes from './routes/location.js'
 import mapsRoutes from './routes/maps.js'
-import cache from './routes/cache.js'
+import addressRoutes from './routes/address.js'
+import testKmlImportRoutes from './routes/test-kml-import.js'
 
 // Swagger
 import { specs, swaggerUi } from './config/swagger.js'
@@ -90,18 +91,76 @@ const initializeApp = async () => {
     app.use('/api/upload', uploadRoutes)
     app.use('/api/location', locationRoutes)
     app.use('/api/maps', mapsRoutes)
-    app.use('/api', mapRoutes)
-    app.use('/tools', cache)
+    app.use('/api/address', addressRoutes)
+    app.use('/api/test-kml-import', testKmlImportRoutes)
+    
+    // AdminJS logout route
+/*     app.get('/admin/logout', (req, res) => {
+      try {
+        // ลบ session
+        if (req.session) {
+          req.session.destroy((err) => {
+            if (err) {
+              console.error('Session destroy error:', err)
+            }
+          })
+        }
+        
+        // ลบ cookie
+        res.clearCookie('adminjs')
+        
+        res.json({
+          success: true,
+          message: 'ออกจากระบบสำเร็จ'
+        })
+      } catch (error) {
+        console.error('Logout error:', error)
+        res.status(500).json({
+          success: false,
+          message: 'เกิดข้อผิดพลาดในการออกจากระบบ'
+        })
+      }
+    }) */
 
-    app.get('/map', (req, res) => {
-      res.sendFile(path.join(__dirname, 'public', 'index.html'))
-    })
-    app.get('/', (req, res) => {
-      res.sendFile(path.join(__dirname, 'public', 'index.html'))
-    })
-    app.get('/index', (req, res) => {
-      res.sendFile(path.join(__dirname, 'public', 'index.html'))
-    })
+    // Custom Login Handler for better error messages
+/*     app.post('/admin/login', async (req, res) => {
+      try {
+        const { email, password } = req.body
+        
+        if (!email || !password) {
+          return res.redirect('/admin/login?error=' + encodeURIComponent('กรุณากรอกอีเมลและรหัสผ่าน'))
+        }
+
+        // Check if user exists
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: email },
+              { username: email }
+            ]
+          }
+        })
+
+        if (!user) {
+          return res.redirect('/admin/login?error=' + encodeURIComponent('ไม่พบผู้ใช้ในระบบ กรุณาตรวจสอบอีเมลหรือชื่อผู้ใช้'))
+        }
+
+        // Check password
+        const isPasswordValid = await bcrypt.compare(password, user.password)
+        
+        if (!isPasswordValid) {
+          return res.redirect('/admin/login?error=' + encodeURIComponent('รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบรหัสผ่าน'))
+        }
+
+        // If valid, redirect to admin dashboard
+        res.redirect('/admin')
+      } catch (error) {
+        console.error('Login error:', error)
+        res.redirect('/admin/login?error=' + encodeURIComponent('เกิดข้อผิดพลาดในการเข้าสู่ระบบ'))
+      }
+    }) */
+
+ 
     app.get('/api/info', (req, res) => {
       res.json({
         success: true,
@@ -114,7 +173,8 @@ const initializeApp = async () => {
           upload: '/api/upload',
           location: '/api/location',
           maps: '/api/maps',
-          map: '/api/map',
+          address: '/api/address',
+          testKmlImport: '/api/test-kml-import',
           docs: '/api-docs'
         },
         timestamp: new Date().toISOString(),
@@ -141,6 +201,24 @@ const initializeApp = async () => {
 
     // AdminJS
     const admin = await createAdminJS(prisma)
+
+    // Create AdminJS router with authentication
+/*     const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
+      admin,
+    
+      {
+        authenticate: adminAuth.authenticate,
+        cookieName: 'adminjs',
+        cookiePassword: process.env.ADMIN_COOKIE_SECRET || 'adminjs-secret-key',
+      },
+      null,
+      {
+        resave: false,
+        saveUninitialized: true,
+        secret: process.env.ADMIN_COOKIE_SECRET || 'adminjs-secret-key'
+      }
+    )
+     */
     const adminRouter = AdminJSExpress.buildRouter(admin)
     app.use(admin.options.rootPath, adminRouter)
 

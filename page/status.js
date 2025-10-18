@@ -1,3 +1,4 @@
+import { backButton } from "./feature/back-button"
 
 const options_status = {
     navigation: {
@@ -21,7 +22,8 @@ const options_status = {
     actions: {
         new: {   showInDrawer: true },  
         edit: { showInDrawer: true },  
-        show: { showInDrawer: true },  
+        show: { showInDrawer: true }, 
+        backButton,
 
     }
 }

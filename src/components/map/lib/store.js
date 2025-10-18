@@ -22,16 +22,23 @@ export const useMapStore = create((set, get) => ({
 
   // Setters
   setLatLng: (latitude, longitude) => {
-    // Always update both values
     set({ latitude, longitude })
   },
   setAddress: (addr) => set(addr),
 
-  setColor: (colors) => set({ colors }),
-  setColors: (colors) => set({ colors }),
+  setColor: (colors) => {
+    set({ colors })
+  },
+  setColors: (colors) => {
+    set({ colors })
+  },
 
-  setData: (data) => set({ data }),
-  setGeom: (geom) => set({ geom }),
+  setData: (data) => {
+    set({ data })
+  },
+  setGeom: (geom) => {
+    set({ geom })
+  },
 
   setHouseNo: (house_no) => set({ house_no }),
   setRoad: (road) => set({ road }),
@@ -42,21 +49,10 @@ export const useMapStore = create((set, get) => ({
   setNameLocal: (name_local) => set({ name_local }),
 
 
-  // Reset function to clear all values
-  resetMap: () => {
-    set({ 
-      latitude: 7.559, 
-      longitude: 99.611,
-      name_local: "",
-      house_no: "",
-      road: "",
-      subdistrict: "",
-      district: "",
-      province: "",
-      postcode: "",
-      colors: "#ff0000",
-      data: null,
-      geom: null
-    })
+  // Getter function to see current state
+  getState: () => {
+    return get()
   },
+
+
 }))

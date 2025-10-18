@@ -10,7 +10,9 @@ import { componentLoader } from './optionsResources.js'
 import options from './optionsResources.js'
 import { fileURLToPath } from 'url'
 
+
 const __filename = fileURLToPath(import.meta.url)
+
 
 // ✅ ปิด cache ทุกโหมด
 const adminJsOptions = {
@@ -55,6 +57,7 @@ const adminJsOptions = {
       ...(options.assets?.styles || []),
     ],
     scripts: [
+      '/public/setupFlatpickrLocale.js',
       ...(options.assets?.scripts || []),
     ],
   },
@@ -74,13 +77,18 @@ const adminJsOptions = {
   // ========================================
   databases: [],
   resources: [],
-  componentLoader: componentLoader, // ✅ ใช้ componentLoader จาก optionsResources
+
 
   // ========================================
   // UI/UX OPTIMIZATIONS
   // ========================================
-  dashboard: {
+   dashboard: {
     component: 'Dashboard',
+  }, 
+  pages: {
+    Component: {
+      component: 'ViewKml',
+    }
   },
 
   branding: {
@@ -96,12 +104,28 @@ const adminJsOptions = {
         primary20: '#4facfe',
         filterBg: '#ffffff',
         accent: '#667eea',
-        hoverBg: '#f5f5f5',
+        hoverBg: '#4facfe',
+
+        
+      // สีเพิ่มเติมที่เราต้องใช้
+      bgTableHeader: '#eef2ff',       // สีพื้น header
+      bgTableRowAlt: '#ffffff',        // สีแถวปกติ
+      bgTableRowHover: '#f0f5ff',      // สีเมื่อ hover ใน row
+      textHeader: '#333333',
+      textRow: '#444444',
       },
     },
   },
 
   rootPath: '/admin',
+  loginPath: '/admin/login',
+  logoutPath: '/admin/logout',
+  componentLoader: componentLoader, // ✅ ใช้ componentLoader จาก optionsResources
+
+  // Custom login component configuration
+/*   components: {
+    Login: 'Login'
+  }, */
 }
 
 // ========================================
@@ -114,6 +138,9 @@ export const createAdminJS = async (prisma) => {
   adminJsOptions.resources = createAdminResources(prisma)
 
   const admin = new AdminJS(adminJsOptions)
+
+  // Override login with custom component
+
 
   // ไม่ preload cache
 //  await preloadComponents()

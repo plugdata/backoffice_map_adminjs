@@ -8,10 +8,11 @@ import options_user from './user.js'
 import options_owner from './owner.js'
 import options_fiscalyear from './fiscalyear.js'
 import options_buildcontrol from './buildcontrol.js'
-import options_worktopic from './worktopic.js'
+//import options_worktopic from './worktopic.js'
 import uploads_options from './uploads.js'
 import options_zoneRisk from './zoneRisk.js'
 import options_map from './map.js'
+import options_map_custom from './map-custom.js'
 import options_planproject from './planproject.js'
 import options_approvedproject from './approveproject.js'
 // ฟังก์ชันรวม resource ทั้งหมด
@@ -34,9 +35,24 @@ export const createAdminResources = (prisma) => {
      
     },
     {
-      resource: { model: getModelByName('WorkTopic'), client: prisma },
-      options: options_worktopic,
+      resource: { model: getModelByName('districts'), client: prisma },
+      options: {
+        navigation: false, // ❌ ไม่ให้แสดงใน sidebar
+        actions: {
+          // ❌ ปิดการมองเห็นทั้งหมดใน UI แต่ API ยังอยู่
+          list: { isVisible: false },
+          show: { isVisible: false },
+          edit: { isVisible: false },
+          delete: { isVisible: false },
+          new: { isVisible: false },
+        },
+        properties: {
+          // ถ้าต้องการซ่อน fields ทั้งหมดใน UI ด้วย
+          '*': { isVisible: false },
+        },
+      },
     },
+
     {
       resource: { model: getModelByName('BuildingControl'), client: prisma },
       options: options_buildcontrol,
@@ -70,9 +86,13 @@ export const createAdminResources = (prisma) => {
       resource: { model: getModelByName('Map'), client: prisma },
       options: options_map,
   }, 
-    {  
+     {  
       resource: { model: getModelByName('Uploads'), client: prisma },
       options: uploads_options,
+    },
+    {
+      resource: { model: getModelByName('Map'), client: prisma },
+      options: options_map_custom,
     },
   ]
 } 
