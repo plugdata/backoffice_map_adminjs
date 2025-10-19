@@ -69,6 +69,7 @@ model BuildingControl {
   owner_id       Int?
   status         String?
   license_number String?
+  date           DateTime?
   maps           Map?
   uploads        Uploads[] @relation("BuildingControlUploads")
  created_at     DateTime   @default(now())

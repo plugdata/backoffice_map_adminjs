@@ -94,6 +94,12 @@ const initializeApp = async () => {
     app.use('/api/address', addressRoutes)
     app.use('/api/import-kml', testKmlImportRoutes)
     app.use('/api/upload-image', uploadPictureRoutes)
+    
+    // Test page route
+    app.get('/upload-test', (req, res) => {
+      res.sendFile(path.join(__dirname, 'public', 'upload-test.html'))
+    })
+    
     // AdminJS logout route
 /*     app.get('/admin/logout', (req, res) => {
       try {
