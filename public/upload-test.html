@@ -399,9 +399,9 @@
                 
                 <form id="uploadForm" enctype="multipart/form-data">
                     <div class="form-group">
-                        <label for="imageFile" id="file-label">เลือกไฟล์รูปภาพ:</label>
+                        <label for="imageFile" id="file-label">เลือกไฟล์รูปภาพหรือ PDF:</label>
                         <div class="file-input-wrapper">
-                            <input type="file" id="imageFile" name="image" accept="image/*" class="file-input" onchange="handleFileSelect(event)">
+                            <input type="file" id="imageFile" name="image" accept="image/*,application/pdf" class="file-input" onchange="handleFileSelect(event)">
                             <button type="button" class="file-input-button" onclick="document.getElementById('imageFile').click()">
                                 📁 เลือกไฟล์หรือลากมาวางที่นี่
                             </button>
@@ -462,7 +462,7 @@
                 "feature4-title": "ผูกข้อมูลหลัก",
                 "feature4-desc": "buildingControlId, riskZoneId",
                 "upload-title": "📁 อัปโหลดไฟล์",
-                "file-label": "เลือกไฟล์รูปภาพ:",
+                "file-label": "เลือกไฟล์รูปภาพหรือ PDF:",
                 "mapid-label": "Map ID (optional):",
                 "desc-label": "คำอธิบาย:",
                 "upload-btn": "🚀 อัปโหลดไฟล์",
@@ -492,7 +492,7 @@
                 "feature4-title": "Data Binding",
                 "feature4-desc": "buildingControlId, riskZoneId linking",
                 "upload-title": "📁 Upload Files",
-                "file-label": "Select image file:",
+                "file-label": "Select image or PDF file:",
                 "mapid-label": "Map ID (optional):",
                 "desc-label": "Description:",
                 "upload-btn": "🚀 Upload File",
@@ -551,6 +551,19 @@
                         previewContainer.appendChild(previewItem);
                     };
                     reader.readAsDataURL(file);
+                } else if (file.type === 'application/pdf') {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    previewItem.innerHTML = `
+                        <div class="preview-image" style="background: #f8f9fa; display: flex; align-items: center; justify-content: center; color: #dc3545; font-size: 3rem;">
+                            📄
+                        </div>
+                        <div class="preview-info">
+                            <strong>${file.name}</strong><br>
+                            ${formatFileSize(file.size)} | ${file.type}
+                        </div>
+                    `;
+                    previewContainer.appendChild(previewItem);
                 }
             });
         }
@@ -584,7 +597,7 @@
             showLoading(true);
 
             try {
-                const response = await fetch('/api/upload/image', {
+                const response = await fetch('/api/upload-image', {
                     method: 'POST',
                     body: formData
                 });
@@ -625,7 +638,7 @@
         // Load uploaded files
         async function loadUploadedFiles() {
             try {
-                const response = await fetch('/api/upload/images');
+                const response = await fetch('/api/upload-image');
                 const result = await response.json();
 
                 if (result.success) {
@@ -645,18 +658,26 @@
             files.forEach(file => {
                 const fileCard = document.createElement('div');
                 fileCard.className = 'file-card';
+                
+                // Determine if it's a PDF or image
+                const isPDF = file.mimetype === 'application/pdf' || file.filename.toLowerCase().endsWith('.pdf');
+                
+                const thumbnailContent = isPDF 
+                    ? `<div class="file-thumbnail" style="background: #f8f9fa; display: flex; align-items: center; justify-content: center; color: #dc3545; font-size: 2rem;">📄</div>`
+                    : `<img src="${file.url}" class="file-thumbnail" alt="${file.originalName || file.filename}">`;
+                
                 fileCard.innerHTML = `
-                    <img src="${file.url}" class="file-thumbnail" alt="${file.originalName}">
+                    ${thumbnailContent}
                     <div class="file-info">
-                        <strong>${file.originalName}</strong><br>
-                        ${formatFileSize(file.size)} | ${file.mimetype}<br>
+                        <strong>${file.originalName || file.filename}</strong><br>
+                        ${formatFileSize(file.size)} | ${file.mimetype || 'Unknown'}<br>
                         ${new Date(file.created_at).toLocaleString('th-TH')}
                     </div>
                     <div class="file-actions">
                         <button class="btn btn-primary" onclick="viewFile('${file.url}')">
                             👁️ ${translations[currentLanguage]['view']}
                         </button>
-                        <button class="btn btn-danger" onclick="deleteFile(${file.id})">
+                        <button class="btn btn-danger" onclick="deleteFile('${file.filename}')">
                             🗑️ ${translations[currentLanguage]['delete']}
                         </button>
                     </div>
@@ -669,11 +690,11 @@
             window.open(url, '_blank');
         }
 
-        async function deleteFile(id) {
+        async function deleteFile(filename) {
             if (!confirm('คุณแน่ใจหรือไม่ที่จะลบไฟล์นี้?')) return;
 
             try {
-                const response = await fetch(`/api/upload/image/${id}`, {
+                const response = await fetch(`/api/upload-image/${filename}`, {
                     method: 'DELETE'
                 });
 

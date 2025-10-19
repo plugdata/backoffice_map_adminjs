@@ -35,16 +35,16 @@ const storage = multer.diskStorage({
   }
 })
 
-// File filter for images only
+// File filter for images and PDFs
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|webp/
+  const allowedTypes = /jpeg|jpg|png|gif|webp|pdf/
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase())
   const mimetype = allowedTypes.test(file.mimetype)
 
   if (mimetype && extname) {
     return cb(null, true)
   } else {
-    cb(new Error('กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น (JPEG, JPG, PNG, GIF, WEBP)'))
+    cb(new Error('กรุณาอัปโหลดไฟล์รูปภาพหรือ PDF เท่านั้น (JPEG, JPG, PNG, GIF, WEBP, PDF)'))
   }
 }
 
