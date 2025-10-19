@@ -1,19 +1,17 @@
-// API endpoint for testing KML/GeoJSON import functionality
+/* 
 import express from 'express'
 import { prisma } from '../page/buildingControl/helpers.js'
 
 const router = express.Router()
 
-/**
- * ✅ helper: parse JSON ที่อาจโดน stringify ซ้ำหลายชั้น
- */
+
 function safeParseJson(value) {
   try {
     let parsed = value
     if (typeof parsed === "string") {
       parsed = JSON.parse(parsed)
       if (typeof parsed === "string") {
-        parsed = JSON.parse(parsed) // double-stringified
+        parsed = JSON.parse(parsed) 
       }
     }
     return parsed
@@ -37,7 +35,7 @@ const convertGeoJsonTo2D = (geoJsonData) => {
         console.warn(`⚠️ Invalid coordinate: [${lng}, ${lat}]`)
         return null
       }
-      return [lng, lat] // ✅ ตัด z ออก
+      return [lng, lat]
     }
     return coords.map(convertTo2D).filter(coord => coord !== null)
   }
@@ -98,7 +96,7 @@ async function updateGeomFromGeoJSON(mapId, geoJsonInput) {
   
   console.log('🛰️ CleanGeoJSON for geom update:', cleanGeoJson)
   
-  // Additional validation for GeoJSON structure
+
   if (!cleanObj || !cleanObj.type) {
     console.error("❌ Invalid GeoJSON: missing type")
     return
@@ -165,7 +163,7 @@ function buildMapDataFromPayload(payload) {
   }
 }
 
-// POST /api/test-kml-import - Import GeoJSON data into Map table
+
 router.post('/import', async (req, res) => {
   try {
     console.log('🧪 API Test KML Import - Received data:', JSON.stringify(req.body, null, 2))
@@ -185,7 +183,7 @@ router.post('/import', async (req, res) => {
       buildingControlId 
     } = req.body
 
-    // Validate required fields
+   
     if (!latitude || !longitude) {
       return res.status(400).json({
         success: false,
@@ -200,7 +198,7 @@ router.post('/import', async (req, res) => {
       })
     }
 
-    // Validate GeoJSON structure
+   
     const geoJsonData = safeParseJson(data)
     if (!geoJsonData || !geoJsonData.type) {
       return res.status(400).json({
@@ -209,7 +207,7 @@ router.post('/import', async (req, res) => {
       })
     }
 
-    // Create BuildingControl record if buildingControlId is not provided
+   
     let finalBuildingControlId = buildingControlId
     if (!finalBuildingControlId) {
       const buildingControl = await prisma.buildingControl.create({
@@ -217,7 +215,7 @@ router.post('/import', async (req, res) => {
           building_type: 'API Import Test',
           use_purpose: 'Test Purpose',
           quantity: 1,
-          fiscalYearId: 1, // Assuming fiscal year 1 exists
+          fiscalYearId: 1,
           status: 'Test Status'
         }
       })
@@ -225,7 +223,7 @@ router.post('/import', async (req, res) => {
       console.log('✅ Created test BuildingControl with ID:', finalBuildingControlId)
     }
 
-    // Build map data
+
     const mapData = buildMapDataFromPayload({
       latitude,
       longitude,
@@ -242,19 +240,19 @@ router.post('/import', async (req, res) => {
 
     console.log('📊 Built map data:', JSON.stringify(mapData, null, 2))
 
-    // Create map record
+  
     const mapRecord = await prisma.map.create({
       data: { ...mapData, buildingControlId: finalBuildingControlId },
     })
     console.log('✅ Map record created with ID:', mapRecord.id)
 
-    // Update geometry
+    
     if (data) {
       await updateGeomFromGeoJSON(mapRecord.id, data)
       console.log('✅ Geometry updated successfully')
     }
 
-    // Get the complete record with geometry info
+
     const result = await prisma.$queryRaw`
       SELECT 
         id,
@@ -304,12 +302,12 @@ router.post('/import', async (req, res) => {
   }
 })
 
-// GET /api/test-kml-import/sample-data - Get sample data from existing Map records
+
 router.get('/sample-data', async (req, res) => {
   try {
     console.log('🧪 API Test KML Import - Getting sample data')
     
-    // Get existing Map records with geometry info
+
     const existingMaps = await prisma.$queryRaw`
       SELECT 
         id,
@@ -327,7 +325,7 @@ router.get('/sample-data', async (req, res) => {
       LIMIT 10
     `
 
-    // Get BuildingControl records for reference
+
     const buildingControls = await prisma.buildingControl.findMany({
       take: 5,
       orderBy: { id: 'desc' },
@@ -383,12 +381,12 @@ router.get('/sample-data', async (req, res) => {
   }
 })
 
-// GET /api/test-kml-import/test-records - Get test records created by this API
+
 router.get('/test-records', async (req, res) => {
   try {
     console.log('🧪 API Test KML Import - Getting test records')
     
-    // Get test records (those with "API Import Test" in name_local)
+    
     const testRecords = await prisma.$queryRaw`
       SELECT 
         m.id,
@@ -428,12 +426,12 @@ router.get('/test-records', async (req, res) => {
   }
 })
 
-// DELETE /api/test-kml-import/cleanup - Clean up test records
+
 router.delete('/cleanup', async (req, res) => {
   try {
     console.log('🧪 API Test KML Import - Cleaning up test records')
     
-    // Delete test Map records
+    
     const deletedMaps = await prisma.map.deleteMany({
       where: {
         name_local: {
@@ -442,7 +440,7 @@ router.delete('/cleanup', async (req, res) => {
       }
     })
 
-    // Delete test BuildingControl records
+
     const deletedBuildingControls = await prisma.buildingControl.deleteMany({
       where: {
         building_type: 'API Import Test'
@@ -465,6 +463,58 @@ router.delete('/cleanup', async (req, res) => {
       success: false,
       error: 'Internal server error',
       message: error.message
+    })
+  }
+})
+
+export default router
+ */
+import express from 'express'
+import { prisma } from '../page/buildingControl/helpers.js'
+
+const router = express.Router()
+
+// ✅ GET /api/test-kml-import
+router.get('/', async (req, res) => {
+  try {
+    console.log('🛰️ Fetching Map data (via Prisma)...')
+
+    // ดึงข้อมูลจาก Prisma โดยตรง (ORM)
+    const maps = await prisma.map.findMany({
+      where: { geoJsonData: { not: null } }, // ต้องมี field geoJsonData ใน schema
+      orderBy: { id: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        name_local: true,
+        house_no: true,
+        address: true,
+        geoJsonData: true
+      }
+    })
+
+    // ตรวจสอบว่ามีข้อมูลหรือไม่
+    if (maps.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบข้อมูลแผนที่ (Map)',
+        data: []
+      })
+    }
+
+    // ส่งผลลัพธ์กลับ
+    res.json({
+      success: true,
+      count: maps.length,
+      data: maps
+    })
+
+  } catch (error) {
+    console.error('❌ Error fetching Map JSON:', error.message)
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการดึงข้อมูล',
+      error: error.message
     })
   }
 })

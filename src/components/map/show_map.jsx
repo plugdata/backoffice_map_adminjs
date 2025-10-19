@@ -48,23 +48,28 @@ const MapWrapper = styled.div`
 `
 
 const ShowMap = ({ record, property }) => {
-  const { latitude, longitude, data, colors, geom_geojson } = record?.params || {}
+  const { latitude, longitude, name_local, house_no, address, image_before, image_after, colors, geoJsonData } = record?.params || {}
 
-  const preload = { data }
+  const preload = { name_local, house_no, address, image_before, image_after}
 
   const handleMapChange = (field, value) => {
     console.log("🔄 Changed:", field, value)
   }
 
-  console.log('🗺️ ShowMap rendering with:', {
+/*   console.log('🗺️ ShowMap rendering with:', {
     latitude,
     longitude,
-    data,
+    geoJsonData,
+    name_local,
+    house_no,
+    address,
+    image_before,
+    image_after,
     colors,
     geom_geojson,
     record: record?.params
   })
-
+ */
   return (
     <Box mb="lg">
       <Header>🗺️ แผนที่โซน</Header>
@@ -76,26 +81,18 @@ const ShowMap = ({ record, property }) => {
         <div>
           <strong>Longitude:</strong> {longitude || "—"}
         </div>
-        {data && (
-          <div>
-            <strong>GeoJSON Data:</strong> {data.type || "Unknown"}
-            {data.features && (
-              <span> ({data.features.length} features)</span>
-            )}
-          </div>
-        )}
-        {geom_geojson && (
-          <div>
-            <strong>Geometry:</strong> {JSON.parse(geom_geojson).type || "Unknown"}
-          </div>
-        )}
       </Coordinates>
 
    
         <MapField
+          geoJsonData={geoJsonData}
+          name_local={name_local}
+          house_no={house_no}
+          address={address}
+          image_before={image_before}
+          image_after={image_after}
           latitude={latitude}
           longitude={longitude}
-          data={data}
           colors={colors}
           onChange={handleMapChange}
           record={record}

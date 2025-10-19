@@ -4,7 +4,7 @@ export const backButton = {
     component: false,
     showInDrawer: false,
     isAccessible: true,
-
+    
     handler: async (request, response, context) => {
         const {record} = context
         const {resourceId} = request.params

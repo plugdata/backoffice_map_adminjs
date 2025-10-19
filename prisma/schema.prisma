@@ -28,6 +28,8 @@ model User {
   resetTokenExpiry  DateTime?
   createdAt         DateTime  @default(now())
   owners            Owner[]
+  planProjects      PlanProject[]    
+  approvedProjects  ApprovedProject[] 
 }
 
 model Owner {
@@ -65,13 +67,12 @@ model BuildingControl {
   quantity       Int?
   fiscalYearId   Int
   owner_id       Int?
-  createdAt      DateTime  @default(now())
   status         String?
-  date           DateTime?
   license_number String?
   maps           Map?
   uploads        Uploads[] @relation("BuildingControlUploads")
-
+ created_at     DateTime   @default(now())
+ updated_at     DateTime   @updatedAt
   @@index([fiscalYearId])
   @@index([owner_id])
 }
@@ -81,11 +82,13 @@ model RiskZone {
   zoneType     String
   description  String?
   fiscalYearId Int
+  status       String?
   owner_id     Int
   createdAt    DateTime   @default(now())
   maps         Map?
   uploads      Uploads[]  @relation("RiskZoneUploads")
-
+  created_at     DateTime   @default(now())
+  updated_at     DateTime   @updatedAt
   @@index([fiscalYearId])
   @@index([owner_id])
 }
@@ -95,11 +98,13 @@ model ZoningPlan {
   areaName     String
   notes        String?
   fiscalYearId Int
+  status       String?
   owner_id     Int
   createdAt    DateTime   @default(now())
   maps         Map?
   uploads      Uploads[]  @relation("ZoningPlanUploads")
-
+ created_at     DateTime   @default(now())
+ updated_at     DateTime   @updatedAt
   @@index([fiscalYearId])
   @@index([owner_id])
 }
@@ -118,6 +123,14 @@ model PlanProject {
   status     String?
   documentCount Int?
   details    String?
+  maps         Map?
+  uploads      Uploads[]  @relation("PlanProjectUploads")
+  user_id      Int?
+  user         User?     @relation(fields: [user_id], references: [id])
+  created_at     DateTime   @default(now())
+  updated_at     DateTime   @updatedAt
+  @@index([fiscalYearId])
+  @@index([user_id])
 }
 
 model ApprovedProject {
@@ -131,6 +144,14 @@ model ApprovedProject {
   documentCount Int?
   details    String?
   createdAt  DateTime @default(now())
+  maps         Map?
+  uploads      Uploads[]  @relation("ApprovedProjectUploads")
+  user_id      Int?
+  user         User?     @relation(fields: [user_id], references: [id])
+  created_at     DateTime   @default(now())
+  updated_at     DateTime   @updatedAt
+  @@index([fiscalYearId])
+  @@index([user_id])
 }
 
 model Uploads {
@@ -148,6 +169,8 @@ model Uploads {
   buildingControls  BuildingControl[] @relation("BuildingControlUploads")
   riskZones         RiskZone[]        @relation("RiskZoneUploads")
   zoningPlans       ZoningPlan[]      @relation("ZoningPlanUploads")
+  planProjects      PlanProject[]     @relation("PlanProjectUploads")
+  approvedProjects  ApprovedProject[] @relation("ApprovedProjectUploads")
   maps              Map[]             @relation("MapUploads")
 }
 
@@ -156,24 +179,30 @@ model Map {
   buildingControlId Int?             @unique
   riskZoneId        Int?             @unique
   zoningPlanId      Int?             @unique
+  planProjectId     Int?             @unique        // ✅ เพิ่ม
+  approvedProjectId Int?             @unique        // ✅ เพิ่ม
   name_local        String?
   house_no          String?
   address           String?
   latitude          Float?
   longitude         Float?
   colors            String?
-  data              Json?
-  geom Unsupported("geometry")?
-
+  geoJsonData       Json?
+  image_before      String?
+  image_after       String?
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt
   buildingControl   BuildingControl? @relation(fields: [buildingControlId], references: [id])
   riskZone          RiskZone?        @relation(fields: [riskZoneId], references: [id])
   zoningPlan        ZoningPlan?      @relation(fields: [zoningPlanId], references: [id])
+  planProject       PlanProject?     @relation(fields: [planProjectId], references: [id])
+  approvedProject   ApprovedProject? @relation(fields: [approvedProjectId], references: [id])
   maps              Uploads[]        @relation("MapUploads")
   @@index([buildingControlId])
   @@index([riskZoneId])
   @@index([zoningPlanId])
+  @@index([planProjectId])
+  @@index([approvedProjectId])
 }
 
 model districts {

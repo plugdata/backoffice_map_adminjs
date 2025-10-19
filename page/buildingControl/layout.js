@@ -20,7 +20,6 @@ export const layout_buildingControl = [
         { flexDirection: 'row', flex: true, gap: 'sm' }, 
         [
           ['license_number', { flexGrow: 1, pr: 'default' }],
-          ['date', { flexGrow: 1, pr: 'default' }],
           ['status', { flexGrow: 1 }],
         ]
       ],
@@ -80,7 +79,6 @@ export const layout_buildingControl = [
     [
       ['@H3', { children: 'เอกสารแนบ' }],
       'uploadfile',
-      ['createdAt', { flexGrow: 1 }],
     ]
   ],
 

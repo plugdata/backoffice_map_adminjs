@@ -1,13 +1,10 @@
 import { prisma } from './buildingControl/helpers.js'
 import{backButton} from './feature/back-button.js'
 const options_map = {
-  navigation: {
-    name: 'แผนที่',
-    icon: 'Map',
-  },
+  navigation: false, // ✅ ซ่อนจาก sidebar ทั้งหมด
   actions: {
     backButton,
-    list: {
+/*     list: {
       after: async (response) => {
         console.log('🔍 Map list action after - records count:', response.records?.length)
         
@@ -50,7 +47,8 @@ const options_map = {
         }
         return response
       }
-    }
+    } */
+   
   },
   properties: {
     id: { isVisible: { list: false, show: false, edit: false, filter: false } },

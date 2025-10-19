@@ -2,7 +2,7 @@
 import React from "react"
 import MapPopup from "./map/MapForm"
 
-const BuildingControlMap = ({ record, onChange }) => {
+const Map = ({ record, onChange }) => {
   return (
     <MapPopup
       record={record}
@@ -13,5 +13,5 @@ const BuildingControlMap = ({ record, onChange }) => {
   )
 }
 
-export default BuildingControlMap
+export default Map
 

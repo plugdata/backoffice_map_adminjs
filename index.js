@@ -26,7 +26,7 @@ import locationRoutes from './routes/location.js'
 import mapsRoutes from './routes/maps.js'
 import addressRoutes from './routes/address.js'
 import testKmlImportRoutes from './routes/test-kml-import.js'
-
+import uploadPictureRoutes from './routes/uploadpicture.js'
 // Swagger
 import { specs, swaggerUi } from './config/swagger.js'
 
@@ -72,7 +72,7 @@ const initializeApp = async () => {
     const prisma = createPrismaClient()
     
     // Static files
-    await setupStaticFiles(app)
+
     app.use('/www', express.static('www'))
     app.use('/public', express.static('public'))
     app.use('/uploads', express.static('public/uploads'))
@@ -92,8 +92,8 @@ const initializeApp = async () => {
     app.use('/api/location', locationRoutes)
     app.use('/api/maps', mapsRoutes)
     app.use('/api/address', addressRoutes)
-    app.use('/api/test-kml-import', testKmlImportRoutes)
-    
+    app.use('/api/import-kml', testKmlImportRoutes)
+    app.use('/api/upload-image', uploadPictureRoutes)
     // AdminJS logout route
 /*     app.get('/admin/logout', (req, res) => {
       try {
@@ -175,7 +175,8 @@ const initializeApp = async () => {
           maps: '/api/maps',
           address: '/api/address',
           testKmlImport: '/api/test-kml-import',
-          docs: '/api-docs'
+          docs: '/api-docs',
+          uploadImage: '/api/upload-image',
         },
         timestamp: new Date().toISOString(),
       })
@@ -203,7 +204,7 @@ const initializeApp = async () => {
     const admin = await createAdminJS(prisma)
 
     // Create AdminJS router with authentication
-/*     const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
+     const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
       admin,
     
       {
@@ -218,8 +219,8 @@ const initializeApp = async () => {
         secret: process.env.ADMIN_COOKIE_SECRET || 'adminjs-secret-key'
       }
     )
-     */
-    const adminRouter = AdminJSExpress.buildRouter(admin)
+     
+   // const adminRouter = AdminJSExpress.buildRouter(admin)
     app.use(admin.options.rootPath, adminRouter)
 
     if (process.env.NODE_ENV !== 'production') {

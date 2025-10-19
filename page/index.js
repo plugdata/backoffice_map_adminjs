@@ -12,9 +12,9 @@ import options_buildcontrol from './buildcontrol.js'
 import uploads_options from './uploads.js'
 import options_zoneRisk from './zoneRisk.js'
 import options_map from './map.js'
-import options_map_custom from './map-custom.js'
 import options_planproject from './planproject.js'
 import options_approvedproject from './approveproject.js'
+import options_zoningplan from './zoningplan.js'
 // ฟังก์ชันรวม resource ทั้งหมด
 export const createAdminResources = (prisma) => {
   (prisma)
@@ -66,12 +66,7 @@ export const createAdminResources = (prisma) => {
     },
     {
       resource: { model: getModelByName('ZoningPlan'), client: prisma },
-      options: {
-        navigation: {
-          name: 'ฝ่ายควบคุมอาคาร',
-          icon: 'Home',
-        },
-      },
+      options: options_zoningplan,
     },
 
     {
@@ -84,15 +79,27 @@ export const createAdminResources = (prisma) => {
     },
      {
       resource: { model: getModelByName('Map'), client: prisma },
-      options: options_map,
+     // options: options_map,
+     options: {
+      navigation: false, // ❌ ไม่ให้แสดงใน sidebar
+      actions: {
+        // ❌ ปิดการมองเห็นทั้งหมดใน UI แต่ API ยังอยู่
+        list: { isVisible: false },
+        show: { isVisible: false },
+        edit: { isVisible: false },
+        delete: { isVisible: false },
+        new: { isVisible: false },
+      },
+      properties: {
+        // ถ้าต้องการซ่อน fields ทั้งหมดใน UI ด้วย
+        '*': { isVisible: false },
+      },
+    },
   }, 
      {  
       resource: { model: getModelByName('Uploads'), client: prisma },
       options: uploads_options,
     },
-    {
-      resource: { model: getModelByName('Map'), client: prisma },
-      options: options_map_custom,
-    },
+    
   ]
 } 

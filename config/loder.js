@@ -87,45 +87,50 @@ const addComponent2 = (id, relativePath) => {
 /* -----------------------------------------------------
  * 🧱 REGISTER CUSTOM COMPONENTS
  * --------------------------------------------------- */
+//uploadfile Components
+ const UploadFile = addComponent('UploadFile', '../src/components/featureUi/uploadfile/upLoadfile.jsx')
+const Showupload = addComponent('Showupload', '../src/components/featureUi/uploadfile/Showupload.jsx') 
 
 // 🏠 Dashboard
-const Dashboard = addComponent('Dashboard', '../src/components/dashboard.jsx')
+ const Dashboard = addComponent('Dashboard', '../src/components/dashboard.jsx') 
 
 // 👥 Owner Components
-  /* const OwnerShow = addComponent('OwnerShow', '../src/components/owner.jsx')
+   const OwnerShow = addComponent('OwnerShow', '../src/components/owner.jsx')
   const RadioOwner = addComponent('RadioOwner', '../src/components/ownerui/radioOwner.jsx')
-  const OwnerTitleCell = addComponent('OwnerTitleCell', '../src/components/featureUi/sideCellowner.jsx') */
+  const OwnerTitleCell = addComponent('OwnerTitleCell', '../src/components/featureUi/sideCellowner.jsx') 
 
 // 📍 Address Components
-/* const AddressSelect = addComponent('AddressSelect', '../src/components/featureUi/addresse/address_provin.jsx')
+ const AddressSelect = addComponent('AddressSelect', '../src/components/featureUi/addresse/address_provin.jsx')
 const AddressAmphoe = addComponent('AddressAmphoe', '../src/components/featureUi/addresse/address_amp.jsx')
-const AddressTumbon = addComponent('AddressTumbon', '../src/components/featureUi/addresse/address_tumbon.jsx') */
+const AddressTumbon = addComponent('AddressTumbon', '../src/components/featureUi/addresse/address_tumbon.jsx') 
 
 // 🔐 Auth Components
-/* const Login = addComponent2('Login', '../src/components/Login.jsx')
+ const Login = addComponent2('Login', '../src/components/Login.jsx')
 const ForgotPassword = addComponent('ForgotPassword', '../src/components/ForgotPassword.jsx')
-const ResetPassword = addComponent('ResetPassword', '../src/components/ResetPassword.jsx') */
+const ResetPassword = addComponent('ResetPassword', '../src/components/ResetPassword.jsx') 
 
 // 📅 Filter Components
-/* const DefaultDatetimeFilterProperty = addComponent2(
+ const DefaultDatetimeFilterProperty = addComponent2(
   'DefaultDatetimeFilterProperty',
   '../src/components/featureUi/DefaultDatetimeFilterProperty.jsx'
-) */
+) 
 
 // featureUi Components
-/*  const FullNameBadge = addComponent('FullNameBadge', '../src/components/featureUi/badge/fullNameBadge.jsx')
- const YearBadge = addComponent('YearBadge', '../src/components/featureUi/badge/yearBadge.jsx') */
+  const FullNameBadge = addComponent('FullNameBadge', '../src/components/featureUi/badge/fullNameBadge.jsx')
+ const YearBadge = addComponent('YearBadge', '../src/components/featureUi/badge/yearBadge.jsx') 
 
 
  // Map Components
- const ShowMap = addComponent('ShowMap', '../src/components/map/show_map.jsx')
- const Map = addComponent('Map', '../src/components/Map.jsx')
+  const ShowMap = addComponent('ShowMap', '../src/components/map/show_map.jsx')
+ const Map = addComponent('Map', '../src/components/Map.jsx') 
+ const MapRiskZone = addComponent('MapRiskZone', '../src/components/mapRiskZone.jsx')
+ const MapZoningPlan = addComponent('MapZoningPlan', '../src/components/mapZoningPlan.jsx')
 /*  const TestMap = addComponent('TestMap', '../src/testmap/testmap.jsx')
  const ViewKml = addComponent('ViewKml', '../src/components/testmap/viewkml.jsx') */
  
  // Data Display Components
  /* const DataDisplay = addComponent('DataDisplay', '../src/components/featureUi/DataDisplay.jsx') */
- const MapField = addComponent('MapField', '../src/components/featureUi/MapField.jsx')
+/*  const MapField = addComponent('MapField', '../src/components/featureUi/MapField.jsx') */
 /* -----------------------------------------------------
  * 📦 EXPORTS
  * --------------------------------------------------- */
@@ -133,10 +138,11 @@ export {
   componentLoader,
   addComponent,
   addComponent2,
-
+  UploadFile,
+  Showupload,
   // Components
   Dashboard,
- /*  OwnerShow,
+  OwnerShow,
   RadioOwner,
   OwnerTitleCell,
 
@@ -150,13 +156,16 @@ export {
 
   DefaultDatetimeFilterProperty,
   FullNameBadge,
-  YearBadge, */
+  YearBadge, 
+
   ShowMap,
   Map,
+  MapRiskZone,
+  MapZoningPlan,
 /*   TestMap,
   ViewKml,
   DataDisplay, */
-  MapField
+  //MapField
 }
 /* const preloadComponents = async () => { 
   try {

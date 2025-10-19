@@ -4,6 +4,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Upload files
+public/uploads/
+
 # Environment variables
 .env
 .env.local

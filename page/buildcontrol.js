@@ -15,9 +15,8 @@ const options_buildcontrol = {
     'status',
     'fiscalYearId',
     'owner_id',
-  //  'readfile',
   ],
-  
+ 
   properties: {
      // ========================================
     // 📄 ข้อมูลอาคาร (Building Information)
@@ -45,27 +44,16 @@ const options_buildcontrol = {
       type: 'number',
       isVisible: { list: true, show: true, edit: true, filter: true },
     },
-    date: {
-      type: 'datetime',
-      isVisible: { list: true, show: true, edit: true, filter: true },
-    },
+
     status: {
       type: 'select',
       availableValues: await getStatusAvailableValues(),
       isVisible: { list: true, show: true, edit: true, filter: true },
     },
-   ///
-  /*   readfile: {
-      components: {
-        edit: 'control_show',
-        show: 'control_show',
-        list: 'control_show',
-      },
-      isVisible: { list: true, show: true, edit: true, filter: false },
-    }, */
+
     uploadfile: {
       type: 'mixed',
-      //components: { edit: 'UploadFile' , show: 'Showupload' },
+   //   components: { edit: 'UploadFile' , show: 'Showupload' },
       isVisible: { list: false, show: false, edit: true, filter: false },
     },
      map: {
@@ -92,6 +80,7 @@ const options_buildcontrol = {
 
   
   },
+
   actions: actions_buildcontrol,
 }
 

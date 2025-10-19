@@ -1,8 +1,41 @@
 import { getStatusAvailableValues, getFullname, getFiscalYear } from './buildingControl/helpers.js'
+import { actions_zoneRisk } from './zoneRisk/actions.js'
  const options_zoneRisk = {
-        navigation: {
-            name: 'ฝ่ายควบคุมอาคาร',
-        },
+    navigation: {
+        name: 'ฝ่ายควบคุมอาคาร',
+        icon: 'Home',
+      },
+        listProperties: [
+            'zoneType',
+            'description',
+            'status',
+            'fiscalYearId',
+            'owner_id',
+        ],
+        showProperties: [
+                'zoneType',
+                'description',
+                'status',
+                'fiscalYearId',
+                'owner_id',
+                'map',
+        ],
+        editProperties: [
+            'zoneType',
+            'description',
+            'status',
+            'fiscalYearId',
+            'owner_id',
+            'map',
+        ],
+        filterProperties: [
+            'zoneType',
+            'description',
+            'status',
+            'fiscalYearId',
+            'owner_id',
+            'map',
+        ],
         properties: {
             zoneType: {
                 type: 'string',
@@ -33,8 +66,19 @@ import { getStatusAvailableValues, getFullname, getFiscalYear } from './building
 ,
                 isVisible: { list: true, show: true, edit: true, filter: true },
               }, 
-            }
+              map: {
+                isVisible: { list: false, show: true, edit: true, filter: false },
+               
+                components: { edit:'MapRiskZone' , show:'ShowMap'},
+              }, 
+              fiscalYearId: {
+                type: 'select',
+                availableValues: await getFiscalYear(),
+                isVisible: { list: true, show: true, edit: true, filter: true },
+              },
+            },
+            actions: actions_zoneRisk,
+            
         }
-    
- 
+
 export default options_zoneRisk

@@ -3,7 +3,7 @@ import { layout_buildingControl } from './layout.js'
 import { backButton } from '../feature/back-button.js'
 
 export const actions_buildcontrol = {
-  backButton,
+  กลับหน้ารายการ: backButton,
 
   new: {
     layout: [layout_buildingControl],
@@ -17,6 +17,9 @@ export const actions_buildcontrol = {
         const name_local = request.payload.name_local
         const house_no = request.payload.house_no
         const address = request.payload.address
+        const geoJsonData = request.payload.geoJsonData
+        const image_before = request.payload.image_before
+        const image_after = request.payload.image_after
 
         await prisma.map.create({
           data: {
@@ -25,7 +28,10 @@ export const actions_buildcontrol = {
             name_local,
             house_no,
             address,
+            geoJsonData,
             buildingControlId,
+            image_before,
+            image_after,
           },
         })
 
@@ -35,9 +41,18 @@ export const actions_buildcontrol = {
           name_local,
           house_no,
           address,
+          geoJsonData,
+          image_before,
+          image_after,
         })
       }
-
+  // save files
+  if (request.payload.uploadfile) {
+    const files = JSON.parse(request.payload.uploadfile)
+    await createUploadRecords(files, buildingControlId)
+    const uploads = await getUploadRecords(buildingControlId)
+    response.record.params.uploadfile = JSON.stringify(uploads)
+  }
       return response
     },
   },
@@ -54,16 +69,39 @@ export const actions_buildcontrol = {
         const name_local = request.payload.name_local
         const house_no = request.payload.house_no
         const address = request.payload.address
+        const geoJsonData = request.payload.geoJsonData
+        const image_before = request.payload.image_before
+        const image_after = request.payload.image_after
+
         const existing = await prisma.map.findFirst({ where: { buildingControlId } })
 
         if (existing) {
           await prisma.map.update({
             where: { id: existing.id },
-            data: { latitude: lat, longitude: lng, name_local, house_no, address },
+            data: {
+              latitude: lat,
+              longitude: lng,
+              name_local,
+              house_no,
+              address,
+              geoJsonData,
+              image_before,
+              image_after,
+            },
           })
         } else {
           await prisma.map.create({
-            data: { latitude: lat, longitude: lng, name_local, house_no, address, buildingControlId },
+            data: {
+              latitude: lat,
+              longitude: lng,
+              name_local,
+              house_no,
+              address,
+              geoJsonData,
+              buildingControlId,
+              image_before,
+              image_after,
+            },
           })
         }
 
@@ -80,6 +118,9 @@ export const actions_buildcontrol = {
             name_local: latestMap.name_local,
             house_no: latestMap.house_no,
             address: latestMap.address,
+            geoJsonData: latestMap.geoJsonData,
+            image_before: latestMap.image_before,
+            image_after: latestMap.image_after,
           })
         }
 
@@ -89,7 +130,16 @@ export const actions_buildcontrol = {
           name_local,
           house_no,
           address,
+          geoJsonData,
+          image_before,
+          image_after,
         })
+      }
+      // update files
+      if (request.payload.uploadfile) {
+        await deleteUploadRecords(buildingControlId)
+        const files = JSON.parse(request.payload.uploadfile)
+        await createUploadRecords(files, buildingControlId)
       }
 
       return response
@@ -110,6 +160,9 @@ export const actions_buildcontrol = {
           name_local: true,
           house_no: true,
           address: true,
+          geoJsonData: true,
+          image_before: true,
+          image_after: true,
         },
       })
 
@@ -128,6 +181,20 @@ export const actions_buildcontrol = {
       const buildingControlId = parseInt(response.record.id)
       await prisma.map.deleteMany({ where: { buildingControlId } })
       console.log(`🗑️ Deleted Map for BuildingControl ${buildingControlId}`)
+      return response
+    },
+  },
+  bulkDelete: {
+    after: async (response) => {
+      if (!response.records || response.records.length === 0) return response
+  
+      const ids = response.records.map(r => parseInt(r.id))
+  
+      await prisma.$transaction([
+        prisma.map.deleteMany({ where: { buildingControlId: { in: ids } } }),
+      ])
+  
+      console.log(`🗑️ Transaction: deleted Map rows for BuildingControl [${ids.join(', ')}]`)
       return response
     },
   },

@@ -1,7 +1,8 @@
-// KML Parser Utility Module - Simplified Version
+// KML Parser Utility Module - แปลงเฉพาะ Line และ Polygon
 export const parseKMLToGeoJSON = (kmlText) => {
   try {
     console.log('🔍 Parsing KML text length:', kmlText.length)
+    console.log('📝 Converting only LineString and Polygon features (excluding Points)')
     
     // Try to parse as XML
     const parser = new DOMParser()
@@ -42,7 +43,7 @@ export const parseKMLToGeoJSON = (kmlText) => {
     
     // Try multiple parsing strategies
     const strategies = [
-      // Strategy 1: Standard Placemark parsing
+      // Strategy 1: Standard Placemark parsing - เฉพาะ Line และ Polygon
       () => {
         const placemarks = kmlDoc.querySelectorAll('Placemark')
         console.log('🔍 Found placemarks:', placemarks.length)
@@ -50,26 +51,11 @@ export const parseKMLToGeoJSON = (kmlText) => {
         placemarks.forEach((placemark, index) => {
           const name = placemark.querySelector('name')?.textContent || `Feature ${index + 1}`
           
-          // Point - try multiple selectors
-          const pointSelectors = [
-            'Point coordinates',
-            'Point > coordinates',
-            'coordinates'
-          ]
-          
-          for (const selector of pointSelectors) {
-            const point = placemark.querySelector(selector)
-            if (point) {
-              const coords = parseCoordinates(point.textContent)
-              if (coords.length > 0) {
-                features.push({
-                  type: 'Feature',
-                  properties: { name },
-                  geometry: { type: 'Point', coordinates: coords[0] }
-                })
-                break // Found point, move to next placemark
-              }
-            }
+          // Skip Point features - ไม่แปลง Point
+          const hasPoint = placemark.querySelector('Point')
+          if (hasPoint) {
+            console.log('⏭️ Skipping Point feature:', name)
+            return
           }
           
           // LineString - try multiple selectors
@@ -83,6 +69,7 @@ export const parseKMLToGeoJSON = (kmlText) => {
             if (lineString) {
               const coords = parseCoordinates(lineString.textContent)
               if (coords.length >= 2) {
+                console.log('✅ Found LineString:', name, 'with', coords.length, 'coordinates')
                 features.push({
                   type: 'Feature',
                   properties: { name },
@@ -111,6 +98,7 @@ export const parseKMLToGeoJSON = (kmlText) => {
                 if (first[0] !== last[0] || first[1] !== last[1]) {
                   coords.push([first[0], first[1]])
                 }
+                console.log('✅ Found Polygon:', name, 'with', coords.length, 'coordinates')
                 features.push({
                   type: 'Feature',
                   properties: { name },
@@ -123,7 +111,7 @@ export const parseKMLToGeoJSON = (kmlText) => {
         })
       },
       
-      // Strategy 2: Direct coordinates search
+      // Strategy 2: Direct coordinates search - เฉพาะ Line และ Polygon
       () => {
         const allCoords = kmlDoc.querySelectorAll('coordinates')
         console.log('🔍 Found coordinates elements:', allCoords.length)
@@ -131,15 +119,27 @@ export const parseKMLToGeoJSON = (kmlText) => {
         allCoords.forEach((coordEl, index) => {
           const coords = parseCoordinates(coordEl.textContent)
           if (coords.length > 0) {
-            // Determine geometry type based on coordinate count
-            let geometryType = 'Point'
-            let coordinates = coords[0]
-            
-            if (coords.length >= 2) {
-              geometryType = 'LineString'
-              coordinates = coords
+            // Skip single points - ข้าม Point features
+            if (coords.length === 1) {
+              console.log('⏭️ Skipping single point coordinate')
+              return
             }
             
+            // Only process LineString and Polygon
+            let geometryType = 'LineString'
+            let coordinates = coords
+            
+            if (coords.length >= 3) {
+              // Check if it's a polygon by seeing if first and last coordinates are the same
+              const first = coords[0]
+              const last = coords[coords.length - 1]
+              if (first[0] === last[0] && first[1] === last[1]) {
+                geometryType = 'Polygon'
+                coordinates = [coords] // Polygon needs array of coordinate arrays
+              }
+            }
+            
+            console.log('✅ Found', geometryType, 'with', coords.length, 'coordinates')
             features.push({
               type: 'Feature',
               properties: { name: `Feature ${index + 1}` },
@@ -149,7 +149,7 @@ export const parseKMLToGeoJSON = (kmlText) => {
         })
       },
       
-      // Strategy 3: Text-based coordinate extraction
+      // Strategy 3: Text-based coordinate extraction - เฉพาะ Line และ Polygon
       () => {
         const coordRegex = /(-?\d+\.?\d*),(-?\d+\.?\d*)/g
         const matches = [...kmlText.matchAll(coordRegex)]
@@ -160,15 +160,27 @@ export const parseKMLToGeoJSON = (kmlText) => {
             .map(match => validateCoord(parseFloat(match[1]), parseFloat(match[2])))
             .filter(coord => coord !== null)
           
-          if (coords.length > 0) {
-            let geometryType = 'Point'
-            let coordinates = coords[0]
+          // Skip single points - ข้าม Point features
+          if (coords.length === 1) {
+            console.log('⏭️ Skipping single point from text extraction')
+            return
+          }
+          
+          if (coords.length >= 2) {
+            let geometryType = 'LineString'
+            let coordinates = coords
             
-            if (coords.length >= 2) {
-              geometryType = 'LineString'
-              coordinates = coords
+            if (coords.length >= 3) {
+              // Check if it's a polygon by seeing if first and last coordinates are the same
+              const first = coords[0]
+              const last = coords[coords.length - 1]
+              if (first[0] === last[0] && first[1] === last[1]) {
+                geometryType = 'Polygon'
+                coordinates = [coords] // Polygon needs array of coordinate arrays
+              }
             }
             
+            console.log('✅ Found', geometryType, 'from text extraction with', coords.length, 'coordinates')
             features.push({
               type: 'Feature',
               properties: { name: 'Extracted Feature' },
@@ -178,7 +190,7 @@ export const parseKMLToGeoJSON = (kmlText) => {
         }
       },
       
-      // Strategy 4: Handle KML with different namespaces
+      // Strategy 4: Handle KML with different namespaces - เฉพาะ Line และ Polygon
       () => {
         // Try with different namespace prefixes
         const namespaces = ['', 'kml:', 'kml\\:', '\\w+:']
@@ -190,19 +202,39 @@ export const parseKMLToGeoJSON = (kmlText) => {
             
             placemarks.forEach((placemark, index) => {
               const name = placemark.querySelector(`${ns}name`)?.textContent || `Feature ${index + 1}`
+              
+              // Skip Point features - ไม่แปลง Point
+              const hasPoint = placemark.querySelector(`${ns}Point`)
+              if (hasPoint) {
+                console.log('⏭️ Skipping Point feature with namespace:', name)
+                return
+              }
+              
               const coords = placemark.querySelector(`${ns}coordinates`)
               
               if (coords) {
                 const coordList = parseCoordinates(coords.textContent)
-                if (coordList.length > 0) {
-                  let geometryType = 'Point'
-                  let coordinates = coordList[0]
+                // Skip single points - ข้าม Point features
+                if (coordList.length === 1) {
+                  console.log('⏭️ Skipping single point with namespace')
+                  return
+                }
+                
+                if (coordList.length >= 2) {
+                  let geometryType = 'LineString'
+                  let coordinates = coordList
                   
-                  if (coordList.length >= 2) {
-                    geometryType = 'LineString'
-                    coordinates = coordList
+                  if (coordList.length >= 3) {
+                    // Check if it's a polygon by seeing if first and last coordinates are the same
+                    const first = coordList[0]
+                    const last = coordList[coordList.length - 1]
+                    if (first[0] === last[0] && first[1] === last[1]) {
+                      geometryType = 'Polygon'
+                      coordinates = [coordList] // Polygon needs array of coordinate arrays
+                    }
                   }
                   
+                  console.log('✅ Found', geometryType, 'with namespace:', name)
                   features.push({
                     type: 'Feature',
                     properties: { name },
@@ -216,7 +248,7 @@ export const parseKMLToGeoJSON = (kmlText) => {
         }
       },
       
-      // Strategy 5: Handle KML with CDATA sections
+      // Strategy 5: Handle KML with CDATA sections - เฉพาะ Line และ Polygon
       () => {
         const cdataRegex = /<!\[CDATA\[(.*?)\]\]>/gs
         const cdataMatches = [...kmlText.matchAll(cdataRegex)]
@@ -231,15 +263,27 @@ export const parseKMLToGeoJSON = (kmlText) => {
               .map(m => validateCoord(parseFloat(m[1]), parseFloat(m[2])))
               .filter(coord => coord !== null)
             
-            if (coords.length > 0) {
-              let geometryType = 'Point'
-              let coordinates = coords[0]
+            // Skip single points - ข้าม Point features
+            if (coords.length === 1) {
+              console.log('⏭️ Skipping single point from CDATA')
+              return
+            }
+            
+            if (coords.length >= 2) {
+              let geometryType = 'LineString'
+              let coordinates = coords
               
-              if (coords.length >= 2) {
-                geometryType = 'LineString'
-                coordinates = coords
+              if (coords.length >= 3) {
+                // Check if it's a polygon by seeing if first and last coordinates are the same
+                const first = coords[0]
+                const last = coords[coords.length - 1]
+                if (first[0] === last[0] && first[1] === last[1]) {
+                  geometryType = 'Polygon'
+                  coordinates = [coords] // Polygon needs array of coordinate arrays
+                }
               }
               
+              console.log('✅ Found', geometryType, 'from CDATA with', coords.length, 'coordinates')
               features.push({
                 type: 'Feature',
                 properties: { name: `CDATA Feature ${index + 1}` },
@@ -265,16 +309,19 @@ export const parseKMLToGeoJSON = (kmlText) => {
       }
     }
     
-    // If still no features, create a fallback
+    // If still no features, create a fallback - เฉพาะ Line หรือ Polygon
     if (features.length === 0) {
-      console.log('🔍 No features found, creating fallback...')
-      // Create a default point at Thailand center
+      console.log('🔍 No features found, creating fallback LineString...')
+      // Create a default line at Thailand center
       features.push({
         type: 'Feature',
-        properties: { name: 'Default Point' },
+        properties: { name: 'Default LineString' },
         geometry: {
-          type: 'Point',
-          coordinates: [100.5018, 13.7563] // Bangkok coordinates
+          type: 'LineString',
+          coordinates: [
+            [100.5018, 13.7563], // Bangkok coordinates
+            [100.5028, 13.7573]  // Slightly offset point
+          ]
         }
       })
     }
@@ -286,15 +333,18 @@ export const parseKMLToGeoJSON = (kmlText) => {
     }
   } catch (error) {
     console.error('Error parsing KML:', error)
-    // Return a fallback instead of throwing
+    // Return a fallback instead of throwing - เฉพาะ Line หรือ Polygon
     return {
       type: 'FeatureCollection',
       features: [{
         type: 'Feature',
-        properties: { name: 'Fallback Point' },
+        properties: { name: 'Fallback LineString' },
         geometry: {
-          type: 'Point',
-          coordinates: [100.5018, 13.7563] // Bangkok coordinates
+          type: 'LineString',
+          coordinates: [
+            [100.5018, 13.7563], // Bangkok coordinates
+            [100.5028, 13.7573]  // Slightly offset point
+          ]
         }
       }]
     }

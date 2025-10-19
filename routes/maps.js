@@ -39,7 +39,12 @@ router.get('/api/districts/:amphoeCode', async (req, res) => {
     select: { id: true, zoneType: true, description: true, maps: true }
   })
 
-  res.json({ building, riskZones })
+  const zoningPlans = await prisma.zoningPlan.findMany({
+    where: { fiscalYearId },
+    select: { id: true, areaName: true, notes: true, maps: true }
+  })
+
+  res.json({ building, riskZones, zoningPlans })
 }) 
 
 router.get('/local', async (req, res) => {
@@ -57,11 +62,10 @@ router.get('/local', async (req, res) => {
           longitude: true,
           name_local: true,
           house_no: true,
-          road: true,
-          subdistrict: true,
-          district: true,
-          province: true,
-          postcode: true,
+          address: true,
+          image_after: true,
+          image_before: true,
+         
 
           // ✅ join BuildingControl
           buildingControl: {
@@ -69,6 +73,22 @@ router.get('/local', async (req, res) => {
               id: true,
               building_type: true,
               use_purpose: true,
+              fiscalYearId: true
+            }
+          },
+          riskZone: {
+            select: {
+              id: true,
+              zoneType: true,
+              description: true,
+              fiscalYearId: true
+            }
+          },
+          zoningPlan: {
+            select: {
+              id: true,
+              areaName: true,
+              notes: true,
               fiscalYearId: true
             }
           }
@@ -94,6 +114,14 @@ router.get('/local', async (req, res) => {
         buildingControl: m.buildingControl ? {
           ...m.buildingControl,
           year: fiscalYearMap[m.buildingControl.fiscalYearId]
+        } : null,
+        riskZone: m.riskZone ? {
+          ...m.riskZone,
+          year: fiscalYearMap[m.riskZone.fiscalYearId]
+        } : null,
+        zoningPlan: m.zoningPlan ? {
+          ...m.zoningPlan,
+          year: fiscalYearMap[m.zoningPlan.fiscalYearId]
         } : null
       }))
 
@@ -110,9 +138,7 @@ router.get('/local', async (req, res) => {
       whereCondition.OR = [
         { name_local: { contains: String(q), mode: 'insensitive' } },
         { house_no: { contains: String(q), mode: 'insensitive' } },
-        { district: { contains: String(q), mode: 'insensitive' } },
-        { subdistrict: { contains: String(q), mode: 'insensitive' } },
-        { postcode: { contains: String(q), mode: 'insensitive' } }
+        { address: { contains: String(q), mode: 'insensitive' } },
       ]
     }
 
@@ -134,11 +160,9 @@ router.get('/local', async (req, res) => {
         longitude: true,
         name_local: true,
         house_no: true,
-        road: true,
-        subdistrict: true,
-        district: true,
-        province: true,
-        postcode: true,
+        address: true,
+        image_after: true,
+        image_before: true,
 
         // ✅ join BuildingControl
         buildingControl: {
@@ -146,6 +170,22 @@ router.get('/local', async (req, res) => {
             id: true,
             building_type: true,
             use_purpose: true,
+            fiscalYearId: true
+          }
+        },
+        riskZone: {
+          select: {
+            id: true,
+            zoneType: true,
+            description: true,
+            fiscalYearId: true
+          }
+        },
+        zoningPlan: {
+          select: {
+            id: true,
+            areaName: true,
+            notes: true,
             fiscalYearId: true
           }
         }
