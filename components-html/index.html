@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>กองช่าง เทศบาลนครตรัง</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+
+  <!-- ════════════════════════════════════════
+     NAVBAR
+════════════════════════════════════════ -->
+  <nav id="navbar">
+
+    <!-- Panel toggle (hamburger) -->
+    <button id="panel-toggle" title="เปิด/ปิดรายการ">
+      <svg id="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+
+    <!-- Brand -->
+    <a class="brand" href="#">
+      <div class="brand-logo">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Seal_Trang.png/240px-Seal_Trang.png"
+          alt="ตราสัญลักษณ์" onerror="this.style.display='none';this.parentElement.innerHTML='🏛️'" />
+      </div>
+      <div>
+        <div class="brand-name">กองช่าง</div>
+        <div class="brand-sub">เทศบาลนครตรัง</div>
+      </div>
+    </a>
+
+    <!-- Search -->
+    <div id="nav-search-wrap">
+      <svg class="nav-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2">
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.3-4.3" />
+      </svg>
+      <input id="nav-search" type="text" placeholder="ค้นหาสถานที่หรือโครงการ..." />
+    </div>
+
+    <!-- Spacer -->
+    <div style="flex:1;"></div>
+
+    <!-- Stats -->
+    <div class="nav-stat">
+      <div class="nav-stat-label">ผู้เข้าชมสัปดาห์</div>
+      <div class="nav-stat-val">1,284</div>
+    </div>
+    <div class="nav-sep"></div>
+    <div class="nav-stat">
+      <div class="nav-stat-label">ผู้เข้าชมทั้งหมด</div>
+      <div class="nav-stat-val">38,920</div>
+    </div>
+    <div class="nav-sep"></div>
+
+
+  </nav>
+
+  <!-- ════════════════════════════════════════
+     SHELL (below navbar)
+════════════════════════════════════════ -->
+  <div id="shell">
+
+    <!-- LEFT PANEL -->
+    <div id="panel">
+
+      <!-- Filter section -->
+      <div id="filter-section">
+        <div class="filter-title">🔍 ค้นหาและกรองข้อมูล</div>
+
+        <!-- Active filter chips -->
+        <div id="filter-chips"></div>
+
+        <!-- Filter controls row 1 -->
+        <div class="filter-row">
+          <select id="sel-type" title="ประเภทเอกสาร">
+            <option value="">📋 ทุกประเภท</option>
+            <option value="งานสาธารณะ">🔧 งานสาธารณะ</option>
+            <option value="ใบอนุญาต">📄 ใบอนุญาต</option>
+            <option value="งานผังเมือง">🗺️ งานผังเมือง</option>
+          </select>
+          <select id="sel-year" title="ปีงบประมาณ">
+            <option value="">📅 ทุกปี</option>
+            <option value="2567">ปีงบ 2567</option>
+            <option value="2566">ปีงบ 2566</option>
+            <option value="2565">ปีงบ 2565</option>
+          </select>
+        </div>
+
+        <!-- Filter controls row 2 -->
+        <div class="filter-row">
+          <select id="sel-program" title="โปรแกรม/งาน">
+            <option value="">🏗️ ทุกโครงการ</option>
+            <option value="ก่อสร้าง">ก่อสร้าง</option>
+            <option value="ใบอนุญาต">ใบอนุญาต</option>
+            <option value="ผังเมือง">ผังเมือง</option>
+            <option value="ระบายน้ำ">ระบายน้ำ</option>
+          </select>
+          <select id="sel-sort" title="เรียงตาม">
+            <option value="name">เรียงตาม: ชื่อ ↑</option>
+            <option value="rating">เรียงตาม: คะแนน ↓</option>
+            <option value="year">เรียงตาม: ปี ↓</option>
+            <option value="dist">เรียงตาม: ระยะทาง ↑</option>
+          </select>
+        </div>
+
+        <!-- Clear all -->
+        <button id="btn-clear-all" class="btn-clear-all d-none">✕ ล้างตัวกรองทั้งหมด</button>
+      </div>
+
+      <!-- Results header -->
+      <div id="results-header">
+        <span class="results-count">พบ <strong id="result-count">5</strong> รายการ</span>
+        <select id="sort-select" class="sort-select" style="display:none;"><!-- sync with sel-sort --></select>
+      </div>
+
+      <!-- Cards list -->
+      <div id="cards-list"></div>
+
+    </div><!-- /#panel -->
+
+    <!-- MAP -->
+    <div id="map-pane">
+      <div id="map"></div>
+
+      <!-- Panel collapse/expand arrow on map edge -->
+      <button id="panel-edge-btn" title="ซ่อน/แสดงรายการ">
+        <svg id="edge-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 18l-6-6 6-6" />
+        </svg>
+      </button>
+
+      <!-- Map Layer Controls (Custom) -->
+      <div id="layer-control-wrap">
+        <button id="layer-toggle-btn" title="ชั้นข้อมูลแผนที่">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5l10-5l-10-5zM2 17l10 5l10-5M2 12l10 5l10-5" />
+          </svg>
+        </button>
+
+        <div id="layer-panel" class="layer-panel-hidden">
+          <div class="layer-section">
+            <div class="layer-section-title">สไตล์แผนที่</div>
+            <div class="base-layer-grid">
+              <div class="base-item active" data-base="street">
+                <div class="base-thumb street"></div>
+                <span>ผังเมือง</span>
+              </div>
+              <div class="base-item" data-base="sat">
+                <div class="base-thumb sat"></div>
+                <span>ดาวเทียม</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="layer-section">
+            <div class="layer-section-title">ชั้นข้อมูลเพิ่มเติม</div>
+            <div class="data-layer-item">
+              <input type="checkbox" id="layer-building" checked>
+              <label for="layer-building">🏠 งานควบคุมอาคาร (Marker)</label>
+            </div>
+            <div class="data-layer-item">
+              <input type="checkbox" id="layer-public">
+              <label for="layer-public">📜 งานระวางสาธารณะ (KML)</label>
+            </div>
+            <div class="data-layer-item">
+              <input type="checkbox" id="layer-project">
+              <label for="layer-project">🗺️ แผนที่โครงการ (KML)</label>
+            </div>
+            <div class="data-layer-item">
+              <input type="checkbox" id="layer-approved">
+              <label for="layer-approved">✅ โครงการที่อนุมัติ (KML)</label>
+            </div>
+            <div class="data-layer-item">
+              <input type="checkbox" id="layer-heritage">
+              <label for="layer-heritage">🏛️ อาคารทรงคุณค่า (KML)</label>
+            </div>
+            <div class="data-layer-item">
+              <input type="checkbox" id="layer-planning">
+              <label for="layer-planning">🏙️ งานผังเมือง (KML/Marker)</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- detail card moved to Leaflet popup -->
+
+    </div><!-- /#map-pane -->
+  </div><!-- /#shell -->
+
+  <!-- ════════════════════════════════════════
+     COOKIE BANNER
+════════════════════════════════════════ -->
+  <div id="cookie-banner" class="d-none">
+    <div class="cookie-text">
+      <strong>🍪 การใช้คุกกี้</strong> — เว็บไซต์นี้ใช้คุกกี้เพื่อเก็บสถิติการเข้าชม
+      ข้อมูลจะถูกเก็บไว้ในเครื่องของคุณเท่านั้น ไม่มีการส่งข้อมูลไปยังเซิร์ฟเวอร์ภายนอก
+    </div>
+    <div class="cookie-btns">
+      <button class="btn-cookie-decline" id="cookie-decline">ปฏิเสธ</button>
+      <button class="btn-cookie-accept" id="cookie-accept">ยอมรับทั้งหมด</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════ -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    /* ════════════════════════════════════════
+       MOCK DATA
+    ════════════════════════════════════════ */
+    const LOCATIONS = [
+      {
+        id: 1,
+        name: 'โครงการก่อสร้างถนนซอยวิภาวดี',
+        type: 'งานสาธารณะ', year: '2567', distance: 0.8,
+        address: '12 ถนนวิภาวดีรังสิต เมืองตรัง',
+        desc: 'ก่อสร้างและขยายผิวจราจร 480 ม. พร้อมติดตั้งไฟฟ้าแสงสว่างและป้ายจราจร',
+        image: 'https://picsum.photos/seed/road1/380/160',
+        images: [
+          'https://picsum.photos/seed/road1/380/160',
+          'https://picsum.photos/seed/road1b/380/160',
+          'https://picsum.photos/seed/road1c/380/160'
+        ],
+        rating: 4.5, phone: '075-218-500', hours: 'จ–ศ 08:30–16:30',
+        programs: ['ก่อสร้าง', 'ไฟฟ้าสาธารณะ'],
+        docUrl: '#', lat: 7.5590, lng: 99.6115
+      },
+      {
+        id: 2,
+        name: 'ขออนุญาตก่อสร้างอาคารพาณิชย์',
+        type: 'ใบอนุญาต', year: '2567', distance: 1.2,
+        address: '88/4 ถนนกันตัง ทับเที่ยง ตรัง',
+        desc: 'ออกใบอนุญาตก่อสร้างอาคารพาณิชย์ประเภท ก. สำหรับผู้ประกอบการในเขตเทศบาล',
+        image: 'https://picsum.photos/seed/permit2/380/160',
+        images: [
+          'https://picsum.photos/seed/permit2/380/160',
+          'https://picsum.photos/seed/permit2b/380/160'
+        ],
+        rating: 4.2, phone: '075-218-555', hours: 'จ–ศ 08:30–16:30',
+        programs: ['ใบอนุญาต', 'อาคารพาณิชย์'],
+        docUrl: '#', lat: 7.5565, lng: 99.6140
+      },
+      {
+        id: 3,
+        name: 'ผังเมืองรวมนครตรัง ระยะ 5 ปี',
+        type: 'งานผังเมือง', year: '2566', distance: 2.0,
+        address: 'สำนักงานเทศบาลนครตรัง ถนนพระราม 6',
+        desc: 'แผนผังเมืองรวมฉบับปรับปรุงครั้งที่ 3 ครอบคลุม 17 ชุมชน กำหนดโซนที่อยู่อาศัย/พาณิชย์',
+        image: 'https://picsum.photos/seed/plan3/380/160',
+        images: [
+          'https://picsum.photos/seed/plan3/380/160',
+          'https://picsum.photos/seed/plan3b/380/160',
+          'https://picsum.photos/seed/plan3c/380/160',
+          'https://picsum.photos/seed/plan3d/380/160'
+        ],
+        rating: 4.7, phone: '075-218-600', hours: 'จ–ศ 08:30–16:30',
+        programs: ['ผังเมือง', 'วางแผนชุมชน'],
+        docUrl: '#', lat: 7.5545, lng: 99.6095
+      },
+      {
+        id: 4,
+        name: 'ปรับปรุงระบบระบายน้ำชุมชนนาพละ',
+        type: 'งานสาธารณะ', year: '2566', distance: 3.4,
+        address: 'ชุมชนนาพละ ถนนห้วยยอด เมืองตรัง',
+        desc: 'วางท่อระบายน้ำขนาดใหญ่แก้ปัญหาน้ำท่วมขังช่วงฤดูฝน ระยะทาง 1.2 กม.',
+        image: 'https://picsum.photos/seed/drain4/380/160',
+        images: [
+          'https://picsum.photos/seed/drain4/380/160',
+          'https://picsum.photos/seed/drain4b/380/160',
+          'https://picsum.photos/seed/drain4c/380/160'
+        ],
+        rating: 3.9, phone: '075-218-511', hours: 'จ–ศ 08:30–16:30',
+        programs: ['ระบายน้ำ', 'ป้องกันน้ำท่วม'],
+        docUrl: '', lat: 7.5520, lng: 99.6070
+      },
+      {
+        id: 5,
+        name: 'ขออนุญาตรื้อถอนอาคารเก่า',
+        type: 'ใบอนุญาต', year: '2565', distance: 1.7,
+        address: '22 ซอยสุขุมวิท 101 เมืองตรัง',
+        desc: 'ออกหนังสืออนุญาตรื้อถอนอาคารตาม พ.ร.บ.ควบคุมอาคาร สามารถยื่นออนไลน์ได้',
+        image: 'https://picsum.photos/seed/demo5/380/160',
+        images: [
+          'https://picsum.photos/seed/demo5/380/160',
+          'https://picsum.photos/seed/demo5b/380/160'
+        ],
+        rating: 4.1, phone: '075-218-560', hours: 'จ–ศ 08:30–16:30',
+        programs: ['ใบอนุญาต', 'รื้อถอน'],
+        docUrl: '#', lat: 7.5575, lng: 99.6160
+      }
+    ]
+
+    /* ════════════════════════════════════════
+       STATE
+    ════════════════════════════════════════ */
+    const state = {
+      search: '',
+      type: '',
+      year: '',
+      program: '',
+      maxDist: 500,
+      sort: 'name',
+      selected: null,
+      panelOpen: true
+    }
+
+    /* ════════════════════════════════════════
+       ICONS (inline SVG helpers)
+    ════════════════════════════════════════ */
+    const IC = {
+      pin: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
+      tel: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5 19.79 19.79 0 0 1 1.57 4.9 2 2 0 0 1 3.54 2.68h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.18a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
+      clk: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+      star: `<svg width="13" height="13" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+      usr: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>`,
+      nav: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>`,
+      dl: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+      cal: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+      mapPin: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`
+    }
+    const PH = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='380' height='140'%3E%3Crect width='380' height='140' fill='%23fce4ec'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='48'%3E🏗️%3C/text%3E%3C/svg%3E`
+
+    /* ════════════════════════════════════════
+       FILTER LOGIC
+    ════════════════════════════════════════ */
+    function getFiltered() {
+      let data = LOCATIONS.filter(l => {
+        const q = state.search.toLowerCase()
+        if (q && !l.name.toLowerCase().includes(q) && !l.address.toLowerCase().includes(q) && !l.desc.toLowerCase().includes(q)) return false
+        if (state.type && l.type !== state.type) return false
+        if (state.year && l.year !== state.year) return false
+        if (state.program && !l.programs.some(p => p.includes(state.program))) return false
+        if (l.distance > state.maxDist) return false
+        return true
+      })
+
+      // Sort
+      data.sort((a, b) => {
+        if (state.sort === 'rating') return b.rating - a.rating
+        if (state.sort === 'year') return b.year.localeCompare(a.year)
+        if (state.sort === 'dist') return a.distance - b.distance
+        return a.name.localeCompare(b.name, 'th')
+      })
+      return data
+    }
+
+    function hasActiveFilter() {
+      return state.search || state.type || state.year || state.program || state.maxDist < 500
+    }
+
+    /* ════════════════════════════════════════
+       RENDER FILTER CHIPS
+    ════════════════════════════════════════ */
+    function renderChips() {
+      const chips = document.getElementById('filter-chips')
+      const parts = []
+      if (state.search) parts.push({ key: 'search', label: `"${state.search}"` })
+      if (state.type) parts.push({ key: 'type', label: state.type })
+      if (state.year) parts.push({ key: 'year', label: `ปี ${state.year}` })
+      if (state.program) parts.push({ key: 'program', label: state.program })
+      if (state.maxDist < 500) parts.push({ key: 'dist', label: `≤ ${state.maxDist} กม.` })
+
+      chips.innerHTML = parts.map(p => `
+    <span class="f-chip" data-chip-key="${p.key}">${p.label} <span class="chip-x" data-chip-key="${p.key}">×</span></span>
+  `).join('')
+
+      chips.querySelectorAll('.chip-x').forEach(x => {
+        x.addEventListener('click', e => {
+          e.stopPropagation()
+          clearFilter(x.dataset.chipKey)
+        })
+      })
+
+      document.getElementById('btn-clear-all').classList.toggle('d-none', !hasActiveFilter())
+    }
+
+    function clearFilter(key) {
+      if (key === 'search') { state.search = ''; document.getElementById('nav-search').value = ''; }
+      if (key === 'type') { state.type = ''; document.getElementById('sel-type').value = ''; }
+      if (key === 'year') { state.year = ''; document.getElementById('sel-year').value = ''; }
+      if (key === 'program') { state.program = ''; document.getElementById('sel-program').value = ''; }
+      if (key === 'dist') { state.maxDist = 500; }
+      update()
+    }
+
+    /* ════════════════════════════════════════
+       RENDER CARDS
+    ════════════════════════════════════════ */
+    function renderCards() {
+      const list = document.getElementById('cards-list')
+      const data = getFiltered()
+      document.getElementById('result-count').textContent = data.length
+
+      if (data.length === 0) {
+        list.innerHTML = `
+      <div class="state-wrap">
+        ${IC.mapPin}
+        <p style="margin-top:.75rem;font-size:.88rem;">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</p>
+        <button onclick="clearAllFilters()" style="margin-top:.5rem;font-size:.78rem;background:none;border:1px solid #e5e7eb;border-radius:5px;padding:.3rem .8rem;cursor:pointer;color:#374151;">
+          ล้างตัวกรองทั้งหมด
+        </button>
+      </div>`
+        updateMarkers([])
+        return
+      }
+
+      list.innerHTML = data.map(loc => {
+        const sel = state.selected === loc.id
+        const stars = '★'.repeat(Math.floor(loc.rating)) + (loc.rating % 1 >= .5 ? '½' : '')
+        return `
+    <div class="loc-card ${sel ? 'selected' : ''}" data-id="${loc.id}">
+      <div class="card-img-wrap">
+        <img src="${loc.image}" alt="${loc.name}" loading="lazy"
+             onerror="this.onerror=null;this.src='${PH}'"/>
+        <div class="card-rating">${IC.star} ${loc.rating.toFixed(1)}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-title-loc">${loc.name}</div>
+        <div class="card-meta">${IC.pin}<span>${loc.address}</span></div>
+        <div class="card-desc">${loc.desc}</div>
+
+        <div class="badges">
+          <span class="badge-type">${loc.type}</span>
+          <span class="badge-year">${IC.cal} ${loc.year}</span>
+          <span class="badge-dist">${loc.distance} กม.</span>
+        </div>
+
+        <div class="prog-list">
+          ${IC.usr}&nbsp;
+          ${loc.programs.map(p => `<span class="prog-tag">${p}</span>`).join('')}
+        </div>
+
+        <div class="contact-row">${IC.tel} ${loc.phone}</div>
+        <div class="contact-row">${IC.clk} ${loc.hours}</div>
+
+        <div class="card-actions">
+          <button class="btn-act primary" data-action="nav" data-id="${loc.id}">${IC.nav} ไปที่หมุด</button>
+          <button class="btn-act" data-action="doc" data-id="${loc.id}" data-url="${loc.docUrl}">${IC.dl} โหลดเอกสาร</button>
+        </div>
+      </div>
+    </div>`
+      }).join('')
+
+      // Card events
+      list.querySelectorAll('.loc-card').forEach(el => {
+        el.addEventListener('click', () => selectLocation(+el.dataset.id))
+      })
+      list.querySelectorAll('[data-action="nav"]').forEach(btn => {
+        btn.addEventListener('click', e => { e.stopPropagation(); flyTo(+btn.dataset.id) })
+      })
+      list.querySelectorAll('[data-action="doc"]').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation()
+          const url = btn.dataset.url
+          url ? window.open(url, '_blank') : alert('ไม่มีเอกสารสำหรับรายการนี้')
+        })
+      })
+
+      updateMarkers(data)
+    }
+
+    /* ════════════════════════════════════════
+       LEAFLET MAP & LAYERS
+    ════════════════════════════════════════ */
+    // Base Layers
+    const baseMaps = {
+      street: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }),
+      sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EBP, and the GIS User Community'
+      })
+    }
+
+    const map = L.map('map', { zoomControl: true, layers: [baseMaps.street] }).setView([7.5565, 99.6114], 14)
+
+    // Data Layers (Overlay Groups)
+    const layers = {
+      building: L.layerGroup().addTo(map),
+      public: L.layerGroup(),
+      project: L.layerGroup(),
+      approved: L.layerGroup(),
+      heritage: L.layerGroup(),
+      planning: L.layerGroup()
+    }
+
+    // Mock GeoJSON/KML Data Placeholder
+    const MOCK_KML = {
+      planning: {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "properties": { "name": "เขตผังเมืองรวม", "color": "#ec407a" },
+            "geometry": { "type": "Polygon", "coordinates": [[[99.605, 7.554], [99.615, 7.554], [99.615, 7.560], [99.605, 7.560], [99.605, 7.554]]] }
+          }
+        ]
+      },
+      heritage: {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "properties": { "name": "อาคารทรงคุณค่า (เขตเก่า)", "color": "#ad1457" },
+            "geometry": { "type": "Polygon", "coordinates": [[[99.610, 7.557], [99.614, 7.557], [99.614, 7.559], [99.610, 7.559], [99.610, 7.557]]] }
+          }
+        ]
+      },
+      public: {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "properties": { "name": "ระวางที่ดินสาธารณะ", "color": "#0284c7" },
+            "geometry": { "type": "LineString", "coordinates": [[99.608, 7.555], [99.612, 7.555], [99.612, 7.558]] }
+          },
+          {
+            "type": "Feature",
+            "properties": { "name": "แปลงที่ดินสาธารณะ", "color": "#0284c7" },
+            "geometry": { "type": "Polygon", "coordinates": [[[99.610, 7.554], [99.611, 7.554], [99.611, 7.555], [99.610, 7.555], [99.610, 7.554]]] }
+          }
+        ]
+      },
+      approved: {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "properties": { "name": "เขตโครงการอนุมัติ A", "color": "#ca8a04" },
+            "geometry": { "type": "Polygon", "coordinates": [[[99.616, 7.558], [99.618, 7.558], [99.618, 7.560], [99.616, 7.560], [99.616, 7.558]]] }
+          }
+        ]
+      }
+    }
+
+    function initDataLayers() {
+      // Planning KML
+      L.geoJSON(MOCK_KML.planning, {
+        style: (f) => ({ color: f.properties.color, weight: 2, fillOpacity: 0.1 })
+      }).addTo(layers.planning)
+
+      // Heritage KML
+      L.geoJSON(MOCK_KML.heritage, {
+        style: (f) => ({ color: f.properties.color, weight: 2, fillOpacity: 0.15, dashArray: '5, 5' })
+      }).addTo(layers.heritage)
+
+      // Public Land KML
+      L.geoJSON(MOCK_KML.public, {
+        style: (f) => ({ color: f.properties.color, weight: 3, fillOpacity: 0.2 })
+      }).addTo(layers.public)
+
+      // Approved Projects KML
+      L.geoJSON(MOCK_KML.approved, {
+        style: (f) => ({ color: f.properties.color, weight: 2, fillOpacity: 0.3 })
+      }).addTo(layers.approved)
+
+      // Project Map Marker
+      L.marker([7.5580, 99.615], { icon: makeMarker('#16a34a') })
+        .bindPopup('<b>แผนที่โครงการ</b><br>แนวเขตเวนคืนถนนใหม่').addTo(layers.project)
+
+      // Planning Markers
+      L.marker([7.5535, 99.608], { icon: makeMarker('#ec407a') })
+        .bindPopup('<b>งานผังเมือง</b><br>จุดตรวจสอบระยะถอยร่น').addTo(layers.planning)
+    }
+    initDataLayers()
+
+    // Layer Control UI Logic
+    const layerToggleBtn = document.getElementById('layer-toggle-btn')
+    const layerPanel = document.getElementById('layer-panel')
+
+    layerToggleBtn.addEventListener('click', () => {
+      layerToggleBtn.classList.toggle('active')
+      layerPanel.classList.toggle('layer-panel-hidden')
+    })
+
+    // Base Layer Switching
+    document.querySelectorAll('.base-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.base
+        document.querySelectorAll('.base-item').forEach(b => b.classList.remove('active'))
+        btn.classList.add('active')
+
+        // Remove current base, add new
+        map.removeLayer(baseMaps.street)
+        map.removeLayer(baseMaps.sat)
+        baseMaps[type].addTo(map)
+      })
+    })
+
+    // Data Layer Toggling
+    const layerCheckboxes = {
+      'layer-building': layers.building,
+      'layer-public': layers.public,
+      'layer-project': layers.project,
+      'layer-approved': layers.approved,
+      'layer-heritage': layers.heritage,
+      'layer-planning': layers.planning
+    }
+
+    Object.keys(layerCheckboxes).forEach(id => {
+      const cb = document.getElementById(id)
+      cb.addEventListener('change', (e) => {
+        if (e.target.checked) map.addLayer(layerCheckboxes[id])
+        else map.removeLayer(layerCheckboxes[id])
+      })
+    })
+
+    // Custom marker factory
+    function makeMarker(color = '#ec407a', selected = false) {
+      const size = selected ? 36 : 30
+      const border = selected ? '#fff' : '#fff'
+      const shadow = selected ? 'filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))' : ''
+      return L.divIcon({
+        className: '', iconSize: [size, size * 1.35],
+        iconAnchor: [size / 2, size * 1.35],
+        popupAnchor: [0, -size * 1.35],
+        html: `<svg style="${shadow}" width="${size}" height="${size * 1.35}" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 25 15 25S30 25.5 30 15C30 6.716 23.284 0 15 0z"
+            fill="${color}" stroke="${border}" stroke-width="1.5"/>
+      <circle cx="15" cy="15" r="6" fill="${border}"/>
+      ${selected ? `<circle cx="15" cy="15" r="3.5" fill="${color}"/>` : ''}
+    </svg>`
+      })
+    }
+
+    let markersMap = {}
+    function updateMarkers(data) {
+      layers.building.clearLayers()
+      markersMap = {}
+      data.forEach(loc => {
+        const isSel = state.selected === loc.id
+        const m = L.marker([loc.lat, loc.lng], {
+          icon: makeMarker(isSel ? '#ad1457' : '#ec407a', isSel),
+          zIndexOffset: isSel ? 1000 : 0
+        }).addTo(layers.building)
+        m.bindPopup(() => buildPopup(loc), { maxWidth: 300, className: 'detail-popup' })
+        m.on('click', () => selectLocation(loc.id))
+        markersMap[loc.id] = m
+      })
+    }
+
+    function flyTo(id) {
+      const loc = LOCATIONS.find(l => l.id === id)
+      if (!loc) return
+      map.flyTo([loc.lat, loc.lng], 17, { duration: 1.2 })
+      setTimeout(() => markersMap[id]?.openPopup(), 1300)
+    }
+
+    /* ════════════════════════════════════════
+       BUILD POPUP HTML (ใช้กับ Leaflet bindPopup)
+    ════════════════════════════════════════ */
+    function buildPopup(loc) {
+      const imgs = loc.images && loc.images.length ? loc.images : [loc.image]
+      const total = imgs.length
+      let cur = 0
+
+      const el = document.createElement('div')
+      el.className = 'detail-popup-inner'
+      el.innerHTML = `
+        <!-- Image Slider -->
+        <div class="popup-slider">
+          <img class="popup-slide-img" src="${imgs[0]}" alt="ภาพที่ 1"
+               onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22160%22%3E%3Crect width=%22300%22 height=%22160%22 fill=%22%23fce4ec%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2248%22%3E%F0%9F%8F%97%EF%B8%8F%3C/text%3E%3C/svg%3E'"/>
+          ${total > 1 ? `
+          <button class="slide-btn slide-prev" title="ก่อนหน้า">&#8249;</button>
+          <button class="slide-btn slide-next" title="ถัดไป">&#8250;</button>
+          <div class="slide-dots">
+            ${imgs.map((_, i) => `<span class="slide-dot${i === 0 ? ' active' : ''}" data-i="${i}"></span>`).join('')}
+          </div>
+          <div class="slide-counter">1 / ${total}</div>` : ''}
+        </div>
+        <!-- Header -->
+        <div class="detail-header">
+          <div class="detail-title">${loc.name}</div>
+        </div>
+        <!-- Body -->
+        <div class="detail-body">
+          <div class="detail-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>${loc.address}</span>
+          </div>
+          <div class="detail-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5 19.79 19.79 0 0 1 1.57 4.9 2 2 0 0 1 3.54 2.68h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.18a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>${loc.phone}</span>
+          </div>
+          <div class="detail-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>${loc.hours}</span>
+          </div>
+          <div class="detail-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span>${loc.rating.toFixed(1)} / 5</span>
+            &nbsp;·&nbsp;
+            <span style="font-size:.72rem;background:var(--pink-100);color:var(--pink-800);padding:.1rem .45rem;border-radius:999px;font-weight:600;">${loc.type}</span>
+            &nbsp;·&nbsp;
+            <span style="font-size:.72rem;color:#6b7280;">ปีงบ ${loc.year}</span>
+          </div>
+        </div>`
+
+      // Slider logic (only when > 1 image)
+      if (total > 1) {
+        const imgEl = el.querySelector('.popup-slide-img')
+        const dots = el.querySelectorAll('.slide-dot')
+        const counter = el.querySelector('.slide-counter')
+
+        function goTo(n) {
+          cur = (n + total) % total
+          imgEl.style.opacity = '0'
+          setTimeout(() => {
+            imgEl.src = imgs[cur]
+            imgEl.style.opacity = '1'
+          }, 150)
+          dots.forEach((d, i) => d.classList.toggle('active', i === cur))
+          counter.textContent = `${cur + 1} / ${total}`
+        }
+
+        el.querySelector('.slide-prev').addEventListener('click', e => { e.stopPropagation(); goTo(cur - 1) })
+        el.querySelector('.slide-next').addEventListener('click', e => { e.stopPropagation(); goTo(cur + 1) })
+        dots.forEach(d => d.addEventListener('click', e => { e.stopPropagation(); goTo(+d.dataset.i) }))
+      }
+
+      return el
+    }
+
+    /* ════════════════════════════════════════
+       SELECT LOCATION
+    ════════════════════════════════════════ */
+    function selectLocation(id) {
+      state.selected = state.selected === id ? null : id
+      if (state.selected) {
+        flyTo(id)
+        // scroll card into view
+        const card = document.querySelector(`.loc-card[data-id="${id}"]`)
+        card?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      } else {
+        map.closePopup()
+      }
+      renderCards()
+    }
+
+    /* ════════════════════════════════════════
+       PANEL TOGGLE
+    ════════════════════════════════════════ */
+    function togglePanel(open) {
+      state.panelOpen = open !== undefined ? open : !state.panelOpen
+      document.getElementById('panel').classList.toggle('collapsed', !state.panelOpen)
+      const edgeIcon = document.getElementById('edge-icon')
+      edgeIcon.querySelector('path').setAttribute('d',
+        state.panelOpen ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6')
+      // refresh map size
+      setTimeout(() => map.invalidateSize(), 260)
+    }
+    document.getElementById('panel-toggle').addEventListener('click', () => togglePanel())
+    document.getElementById('panel-edge-btn').addEventListener('click', () => togglePanel())
+
+    /* ════════════════════════════════════════
+       SEARCH & FILTER EVENTS
+    ════════════════════════════════════════ */
+    function update() {
+      renderChips()
+      renderCards()
+    }
+    function clearAllFilters() {
+      state.search = ''; state.type = ''; state.year = ''; state.program = ''; state.maxDist = 500
+      document.getElementById('nav-search').value = ''
+      document.getElementById('sel-type').value = ''
+      document.getElementById('sel-year').value = ''
+      document.getElementById('sel-program').value = ''
+      update()
+    }
+
+    // Search (debounced)
+    let searchTimer
+    document.getElementById('nav-search').addEventListener('input', e => {
+      clearTimeout(searchTimer)
+      searchTimer = setTimeout(() => { state.search = e.target.value.trim(); update() }, 250)
+    })
+
+    document.getElementById('sel-type').addEventListener('change', e => { state.type = e.target.value; update() })
+    document.getElementById('sel-year').addEventListener('change', e => { state.year = e.target.value; update() })
+    document.getElementById('sel-program').addEventListener('change', e => { state.program = e.target.value; update() })
+    document.getElementById('sel-sort').addEventListener('change', e => { state.sort = e.target.value; update() })
+
+    // #range-dist slider removed — maxDist defaults to 500 (no filter)
+
+    document.getElementById('btn-clear-all').addEventListener('click', clearAllFilters)
+
+    /* ════════════════════════════════════════
+       COOKIE BANNER
+    ════════════════════════════════════════ */
+    const cookieBanner = document.getElementById('cookie-banner')
+    setTimeout(() => cookieBanner.classList.remove('d-none'), 1200)
+    function hideCookie() {
+      cookieBanner.classList.add('hide')
+      setTimeout(() => cookieBanner.remove(), 320)
+    }
+    document.getElementById('cookie-accept').addEventListener('click', hideCookie)
+    document.getElementById('cookie-decline').addEventListener('click', hideCookie)
+
+    /* ════════════════════════════════════════
+       INIT
+    ════════════════════════════════════════ */
+    update()
+  </script>
+</body>
+
+</html>

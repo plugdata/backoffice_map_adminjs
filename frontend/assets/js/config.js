@@ -95,7 +95,8 @@ const RESOURCES = {
             building_type: { label: 'ประเภทอาคาร', type: 'string', list: true, show: true, edit: true, required: true },
             use_purpose: { label: 'วัตถุประสงค์', type: 'string', list: true, show: true, edit: true },
             quantity: { label: 'จำนวน', type: 'number', list: true, show: true, edit: true },
-            fiscalYearId: { label: 'ปีงบประมาณ', type: 'reference', reference: 'FiscalYear', list: true, show: true, edit: true },
+            fiscalYearId: { label: 'ปี พ.ศ.', type: 'reference', reference: 'FiscalYear', list: true, show: true, edit: true },
+            budget: { label: 'งบประมาณ', type: 'currency', list: true, show: true, edit: true },
             status: { label: 'สถานะ', type: 'select', list: true, show: true, edit: true, options: ['รอดำเนินการ', 'กำลังดำเนินการ', 'เสร็จสิ้น'] },
             owner_id: { label: 'เจ้าของ', type: 'reference', reference: 'Owner', list: true, show: true, edit: true },
             createdAt: { label: 'สร้างเมื่อ', type: 'datetime', list: true, show: true, edit: false }

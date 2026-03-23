@@ -130,9 +130,9 @@ class CrudManager {
             this.totalRecords = result.meta?.total || result.records?.length || 0;
             const records = result.records || [];
 
-            // Update table
+            // Update table (renderAsync pre-fetches reference lookups)
             if (this.tableManager) {
-                this.tableManager.render(records);
+                await this.tableManager.renderAsync(records);
             }
 
             // Update pagination

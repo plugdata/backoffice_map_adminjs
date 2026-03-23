@@ -90,6 +90,7 @@ export const createAdminResources = (prisma) => {
       options: {
         id: 'FiscalYear',
         navigation: { name: 'ตั้งค่าระบบ', icon: 'Settings' },
+        titleField: 'year',
         ...apiOnlyMode,
       },
     },

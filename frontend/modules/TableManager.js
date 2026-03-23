@@ -24,6 +24,39 @@ class TableManager {
         this.records = [];
         this.currentSort = { field: null, direction: 'asc' };
         this.tableEl = document.getElementById(this.options.tableId);
+        this.lookups = {}; // { fieldName: { id: displayLabel } }
+    }
+
+    // Pre-fetch lookup data for all reference fields
+    async fetchLookups() {
+        const fields = this.getListFields();
+        const refFields = fields.filter(f => f.type === 'reference' && f.reference);
+        const seen = new Set();
+        await Promise.all(refFields.map(async field => {
+            if (seen.has(field.reference)) return;
+            seen.add(field.reference);
+            try {
+                const res = await fetch(`/admin/api/resources/${field.reference}/actions/list?perPage=1000`, { credentials: 'include' });
+                const data = await res.json();
+                const map = {};
+                (data.records || []).forEach(r => {
+                    const p = r.params || r;
+                    let label;
+                    if (p.year) label = String(p.year);
+                    else if (p.first_name || p.last_name) label = `${p.title_owner || ''} ${p.first_name || ''} ${p.last_name || ''}`.trim();
+                    else label = p.title || p.name || p.fullName || p.username || String(p.id);
+                    map[String(p.id)] = label;
+                });
+                // Store under the field name (e.g. 'fiscalYearId')
+                this.lookups[field.name] = map;
+            } catch (_) {}
+        }));
+    }
+
+    // Render table (async to support lookups)
+    async renderAsync(records) {
+        await this.fetchLookups();
+        this.render(records);
     }
 
     // Get list fields from config
@@ -85,6 +118,7 @@ class TableManager {
     renderRow(record, fields) {
         const id = record.id || record.params?.id;
         const params = record.params || record;
+        const populated = record.populated || {};
 
         return `
             <tr data-id="${id}" class="table-row-clickable">
@@ -93,9 +127,19 @@ class TableManager {
                         <input type="checkbox" class="form-check-input row-checkbox" data-id="${id}">
                     </td>
                 ` : ''}
-                ${fields.map(field => `
-                    <td>${this.formatValue(params[field.name], field)}</td>
-                `).join('')}
+                ${fields.map(field => {
+                    const rawVal = params[field.name];
+                    let value = rawVal;
+                    if (field.type === 'reference') {
+                        const lookup = this.lookups[field.name];
+                        if (lookup && rawVal != null) {
+                            value = lookup[String(rawVal)] ?? rawVal;
+                        } else if (populated[field.name]) {
+                            value = populated[field.name].params || populated[field.name];
+                        }
+                    }
+                    return `<td>${this.formatValue(value, field)}</td>`;
+                }).join('')}
                 ${this.options.showActions ? `
                     <td class="no-row-click">
                         <div class="btn-group btn-group-sm">
@@ -146,6 +190,11 @@ class TableManager {
             case 'reference':
                 // Show reference display name if available
                 if (typeof value === 'object') {
+                    // year field for FiscalYear, name fields for Owner/others
+                    if (value.year) return value.year
+                    if (value.first_name || value.last_name) {
+                        return `${value.title_owner || ''} ${value.first_name || ''} ${value.last_name || ''}`.trim()
+                    }
                     return value.title || value.name || value.fullName || value.id;
                 }
                 return value;
