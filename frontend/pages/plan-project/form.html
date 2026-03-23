@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ฟอร์มโครงการตามแผน - Backoffice</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="../../assets/css/style.css" rel="stylesheet">
+    <link href="../../assets/css/admin.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        #point-map { height: 280px; border-radius: 8px; border: 1px solid #dee2e6; }
+        .drop-zone { border: 2px dashed #ced4da; border-radius: 8px; padding: 1rem; text-align: center; color: #6c757d; cursor: pointer; transition: border-color 0.15s, background 0.15s; font-size: 0.82rem; }
+        .drop-zone.dragover { border-color: #3eb39d; background: rgba(62,179,157,0.04); }
+        .drop-zone i { font-size: 1.4rem; display: block; margin-bottom: 4px; color: #adb5bd; }
+        .drop-zone.doc-zone { border-color: #93c5fd; background: #eff6ff; }
+        .drop-zone.doc-zone:hover, .drop-zone.doc-zone.dragover { border-color: #2563eb; background: #dbeafe; }
+        .drop-zone.doc-zone i { color: #2563eb; }
+        .drop-zone.img-zone { border-color: #6ee7b7; background: #f0fdf4; }
+        .drop-zone.img-zone:hover, .drop-zone.img-zone.dragover { border-color: #10b981; background: #dcfce7; }
+        .drop-zone.img-zone i { color: #10b981; }
+        .feat-item { cursor: pointer; padding: 0.3rem 0.6rem; border-radius: 5px; border: 1px solid #e9ecef; margin-bottom: 3px; font-size: 0.79rem; display: flex; align-items: center; gap: 5px; }
+        .feat-item:hover { background: rgba(62,179,157,0.06); border-color: #b2dfdb; }
+        .feat-badge { font-size: 0.66rem; background: rgba(62,179,157,0.12); color: #3eb39d; padding: 1px 7px; border-radius: 10px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+        #kml-feature-list { max-height: 120px; overflow-y: auto; }
+        .file-preview-list { max-height: 180px; overflow-y: auto; }
+        .file-q-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; background: #f8fafc; margin-bottom: 4px; font-size: 0.8rem; }
+        .file-q-item img { width: 36px; height: 36px; object-fit: cover; border-radius: 4px; }
+        .file-q-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 1.1rem; flex-shrink: 0; }
+        .file-q-icon.pdf { background: #fee2e2; color: #dc2626; }
+        .file-q-icon.img { background: #dcfce7; color: #16a34a; }
+        .file-q-icon.doc { background: #dbeafe; color: #1d4ed8; }
+        .file-q-remove { margin-left: auto; background: none; border: none; color: #94a3b8; cursor: pointer; }
+        .file-q-remove:hover { color: #ef4444; }
+        .img-type-radio .btn { border-radius: 20px; font-size: 0.78rem; padding: 3px 10px; }
+        .uploads-table { font-size: 0.8rem; }
+        .uploads-table th { background: #f8fafc; font-weight: 600; }
+        .img-thumb-sm { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #e2e8f0; }
+        .badge-pdf { background: #fee2e2; color: #dc2626; font-size: 0.7rem; border-radius: 10px; padding: 2px 7px; }
+        .badge-image { background: #dcfce7; color: #16a34a; font-size: 0.7rem; border-radius: 10px; padding: 2px 7px; }
+        .badge-doc { background: #dbeafe; color: #1d4ed8; font-size: 0.7rem; border-radius: 10px; padding: 2px 7px; }
+        .geo-selected-bar { background: rgba(62,179,157,0.08); border: 1px solid rgba(62,179,157,0.3); border-radius: 6px; padding: 6px 10px; font-size: 0.82rem; color: #1a6b5a; }
+        .zone-code-badge { font-size: 0.68rem; background: rgba(62,179,157,0.12); color: #3eb39d; padding: 1px 6px; border-radius: 10px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+        #feat-list-wrap { max-height: 200px; overflow-y: auto; }
+        .feat-item.selected { background: rgba(62,179,157,0.12); border-color: #3eb39d; }
+    </style>
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="d-flex">
+    <nav class="sidebar bg-white border-end" id="sidebar"></nav>
+    <main class="main-content flex-fill">
+        <header id="main-header" class="bg-white border-bottom p-3 sticky-top shadow-sm"></header>
+        <div class="page-content">
+            <div class="page-header">
+                <h1 class="page-title" id="formTitle">เพิ่มโครงการตามแผน</h1>
+                <p class="page-subtitle" id="formSubtitle">กรอกข้อมูลเพื่อสร้างโครงการตามแผนใหม่</p>
+            </div>
+
+            <div class="row g-3">
+                <!-- ===== LEFT: FORM + KML + DOCS ===== -->
+                <div class="col-lg-7">
+
+                    <!-- FORM CARD -->
+                    <div class="card mb-3">
+                        <div class="card-header fw-semibold" style="font-size:0.9rem;">
+                            <i class="bi bi-pencil-square me-1" style="color:#3eb39d;"></i>ข้อมูลโครงการตามแผน
+                        </div>
+                        <div class="card-body">
+                            <div id="geo-selected-bar" class="geo-selected-bar mb-3" style="display:none;">
+                                <i class="bi bi-geo-alt-fill me-1"></i>
+                                เลือกแผนที่: <span id="geo-selected-label" class="fw-semibold"></span>
+                                <button class="btn btn-sm btn-link text-danger p-0 float-end" id="btn-deselect-geo">
+                                    <i class="bi bi-x"></i> ยกเลิก
+                                </button>
+                            </div>
+                            <form id="dataForm" novalidate></form>
+                        </div>
+                    </div>
+
+                    <!-- KML UPLOAD CARD -->
+                    <div class="card mb-3">
+                        <div class="card-header fw-semibold" style="font-size:0.9rem;">
+                            <i class="bi bi-upload me-1" style="color:#3eb39d;"></i>นำเข้าไฟล์ KML / GeoJSON
+                        </div>
+                        <div class="card-body">
+                            <div class="drop-zone mb-2" id="drop-zone">
+                                <i class="bi bi-file-earmark-arrow-up"></i>
+                                วางไฟล์ <strong>.kml</strong> หรือ <strong>.geojson</strong> ที่นี่
+                                <div class="mt-1" style="font-size:0.72rem;">หรือ <span class="text-primary" id="browse-link" style="cursor:pointer;">คลิกเลือกไฟล์</span></div>
+                            </div>
+                            <input type="file" id="kml-file-input" accept=".kml,.geojson,.json" style="display:none;">
+                            <div id="kml-loaded-section" style="display:none;">
+                                <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:#f8f9fa;">
+                                    <i class="bi bi-file-earmark-check text-success"></i>
+                                    <span id="kml-filename" class="fw-semibold" style="font-size:0.82rem;"></span>
+                                    <span class="badge bg-success" id="kml-feat-count"></span>
+                                    <button class="btn btn-sm btn-link text-danger p-0 ms-auto" id="btn-kml-clear"><i class="bi bi-x-circle"></i></button>
+                                </div>
+                                <div id="kml-feature-list" class="mb-2"></div>
+                                <div class="alert alert-info p-2 mb-2" style="font-size:0.78rem;">
+                                    <i class="bi bi-info-circle me-1"></i>GeoJSON จะถูกแนบใน payload <strong>พร้อมกับการบันทึกฟอร์ม</strong>
+                                </div>
+                                <button id="btn-kml-show-map" class="btn btn-sm btn-outline-secondary"><i class="bi bi-map me-1"></i>แสดงบนแผนที่</button>
+                            </div>
+                            <div id="kml-load-error" class="text-danger mt-1" style="font-size:0.8rem;"></div>
+                        </div>
+                    </div>
+
+                    <!-- DOCUMENT UPLOAD CARD -->
+                    <div class="card mb-3">
+                        <div class="card-header fw-semibold d-flex justify-content-between align-items-center" style="font-size:0.9rem;">
+                            <span><i class="bi bi-file-earmark-text me-1" style="color:#2563eb;"></i>เอกสารแนบ</span>
+                            <span class="badge bg-secondary" id="doc-queue-count" style="display:none;"></span>
+                        </div>
+                        <div class="card-body">
+                            <div class="drop-zone doc-zone mb-2" id="doc-drop-zone">
+                                <i class="bi bi-cloud-arrow-up"></i>
+                                <span class="fw-semibold small">ลากไฟล์หรือคลิกเพื่อเลือก</span><br>
+                                <span style="font-size:0.72rem;">PDF, JPG, PNG, DOC, XLS — สูงสุด 15MB</span>
+                            </div>
+                            <input type="file" id="doc-file-input" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" style="display:none;">
+                            <div id="doc-queue-list" class="file-preview-list"></div>
+                            <div id="doc-existing-section" style="display:none;">
+                                <hr class="my-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="text-muted fw-semibold">เอกสารที่บันทึกไว้</small>
+                                    <button class="btn btn-outline-secondary btn-sm py-0" id="doc-refresh-btn"><i class="bi bi-arrow-clockwise"></i></button>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover align-middle uploads-table mb-0">
+                                        <thead><tr><th>ตัวอย่าง</th><th>ชื่อไฟล์</th><th>ประเภท</th><th>ขนาด</th><th></th></tr></thead>
+                                        <tbody id="doc-existing-tbody"><tr><td colspan="5" class="text-center text-muted py-2">กำลังโหลด...</td></tr></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /col-lg-7 -->
+
+                <!-- ===== RIGHT: MAP + IMAGES ===== -->
+                <div class="col-lg-5">
+
+                    <!-- DB MAP LIST CARD -->
+                    <div class="card mb-3">
+                        <div class="card-header fw-semibold d-flex justify-content-between align-items-center" style="font-size:0.9rem;">
+                            <span><i class="bi bi-map me-1" style="color:#3eb39d;"></i>เลือกจากแผนที่ที่บันทึก</span>
+                            <button id="btn-show-db" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-database me-1"></i>จาก DB
+                            </button>
+                        </div>
+                        <div class="card-body p-2">
+                            <div class="input-group input-group-sm mb-2">
+                                <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="zone-search-input" class="form-control border-start-0" placeholder="ค้นหาชื่อโครงการ...">
+                                <button id="btn-clear-search" class="btn btn-outline-secondary" title="ล้างการค้นหา">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                            <div id="feat-list-wrap" class="mb-2">
+                                <div id="feat-list-loading" class="text-muted ps-1" style="font-size:0.78rem;">กำลังโหลด...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MAP CARD -->
+                    <div class="card mb-3">
+                        <div class="card-header fw-semibold" style="font-size:0.9rem;">
+                            <i class="bi bi-map me-1" style="color:#3eb39d;"></i>แผนที่ KML
+                        </div>
+                        <div class="card-body p-2">
+                            <div id="point-map"></div>
+                            <div id="map-info" class="mt-1" style="font-size:0.74rem;color:#6c757d;min-height:1.2em;"></div>
+                        </div>
+                    </div>
+
+                    <!-- MAP IMAGE UPLOAD CARD -->
+                    <div class="card">
+                        <div class="card-header fw-semibold d-flex justify-content-between align-items-center" style="font-size:0.9rem;">
+                            <span><i class="bi bi-image me-1" style="color:#10b981;"></i>รูปภาพแผนที่</span>
+                            <span class="badge bg-success" id="img-queue-count" style="display:none;"></span>
+                        </div>
+                        <div class="card-body">
+                            <div class="drop-zone img-zone mb-2" id="img-drop-zone">
+                                <i class="bi bi-image"></i>
+                                <span class="fw-semibold small">ลากรูปภาพหรือคลิกเพื่อเลือก</span><br>
+                                <span style="font-size:0.72rem;">JPG, PNG — สูงสุด 10MB</span>
+                            </div>
+                            <input type="file" id="img-file-input" multiple accept=".jpg,.jpeg,.png" style="display:none;">
+                            <div class="d-flex gap-1 mb-2 img-type-radio">
+                                <input type="radio" class="btn-check" name="imgType" id="imgTypeNone" value="" checked>
+                                <label class="btn btn-outline-secondary" for="imgTypeNone">ทั่วไป</label>
+                                <input type="radio" class="btn-check" name="imgType" id="imgTypeBefore" value="before">
+                                <label class="btn btn-outline-warning" for="imgTypeBefore"><i class="bi bi-clock-history me-1"></i>ก่อน</label>
+                                <input type="radio" class="btn-check" name="imgType" id="imgTypeAfter" value="after">
+                                <label class="btn btn-outline-success" for="imgTypeAfter"><i class="bi bi-check-circle me-1"></i>หลัง</label>
+                            </div>
+                            <div id="img-queue-list" class="file-preview-list"></div>
+                            <div id="img-existing-section" style="display:none;">
+                                <hr class="my-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="text-muted fw-semibold">รูปภาพที่บันทึกไว้</small>
+                                    <button class="btn btn-outline-secondary btn-sm py-0" id="img-refresh-btn"><i class="bi bi-arrow-clockwise"></i></button>
+                                </div>
+                                <div id="img-existing-grid" class="row g-2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /col-lg-5 -->
+            </div><!-- /row -->
+        </div>
+    </main>
+</div>
+
+<div id="loadingOverlay">
+    <div class="loading-spinner">
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+        <div class="mt-2" id="loadingText">กำลังบันทึกข้อมูล...</div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/apiClient.js"></script>
+<script src="../../assets/js/auth.js"></script>
+<script src="../../assets/js/i18n.js"></script>
+<script src="../../assets/js/app.js"></script>
+<script src="../../modules/FormManager.js"></script>
+<script src="../../modules/CrudManager.js"></script>
+<script src="../../modules/GeoJsonAdapter.js"></script>
+
+<script>
+const RESOURCE_NAME    = 'PlanProject'
+const RESOURCE_TYPE    = 'planProject'
+const RESOURCE_ID_KEY  = 'planProjectId'
+const LIST_URL         = '/frontend/pages/plan-project/list.html'
+
+if (!authManager.requireAuth()) {}
+
+let crudManager
+let recordId        = null
+let kmlGeoData      = null
+let kmlPreviewLayer = null
+let existingMapId   = null
+
+let docQueueFiles = []
+let imgQueueFiles = []
+
+// ============================================================
+// MAP INIT
+// ============================================================
+const pointMap = L.map('point-map', { scrollWheelZoom: true }).setView([7.556, 99.604], 13)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OSM', maxZoom: 19
+}).addTo(pointMap)
+setTimeout(() => pointMap.invalidateSize(), 300)
+
+
+// ============================================================
+// UPLOAD HELPERS
+// ============================================================
+function formatSize(b) {
+    if (b < 1024) return b + ' B'
+    if (b < 1048576) return (b/1024).toFixed(1) + ' KB'
+    return (b/1048576).toFixed(1) + ' MB'
+}
+function fileQIcon(mimetype) {
+    if (!mimetype) return '<div class="file-q-icon doc"><i class="bi bi-file-earmark"></i></div>'
+    if (mimetype.startsWith('image/')) return null
+    if (mimetype.includes('pdf')) return '<div class="file-q-icon pdf"><i class="bi bi-file-earmark-pdf"></i></div>'
+    return '<div class="file-q-icon doc"><i class="bi bi-file-earmark-word"></i></div>'
+}
+function typeBadge(t) {
+    if (t === 'pdf')   return '<span class="badge-pdf">PDF</span>'
+    if (t === 'image') return '<span class="badge-image">รูปภาพ</span>'
+    return '<span class="badge-doc">เอกสาร</span>'
+}
+
+// ── DOC QUEUE ──
+const docDropZone  = document.getElementById('doc-drop-zone')
+const docFileInput = document.getElementById('doc-file-input')
+docDropZone.addEventListener('click', () => docFileInput.click())
+docDropZone.addEventListener('dragover', e => { e.preventDefault(); docDropZone.classList.add('dragover') })
+docDropZone.addEventListener('dragleave', () => docDropZone.classList.remove('dragover'))
+docDropZone.addEventListener('drop', e => { e.preventDefault(); docDropZone.classList.remove('dragover'); addDocFiles([...e.dataTransfer.files]) })
+docFileInput.addEventListener('change', () => { addDocFiles([...docFileInput.files]); docFileInput.value = '' })
+
+function addDocFiles(files) {
+    files.forEach(f => { if (!docQueueFiles.find(x => x.name===f.name && x.size===f.size)) docQueueFiles.push(f) })
+    renderDocQueue()
+}
+function renderDocQueue() {
+    const list = document.getElementById('doc-queue-list')
+    const badge = document.getElementById('doc-queue-count')
+    list.innerHTML = ''
+    docQueueFiles.forEach((f, i) => {
+        const isImg = f.type.startsWith('image/')
+        const div = document.createElement('div'); div.className = 'file-q-item'
+        const iconHtml = isImg ? `<img src="${URL.createObjectURL(f)}" alt="">` : (fileQIcon(f.type) || '<div class="file-q-icon img"><i class="bi bi-file-earmark-image"></i></div>')
+        div.innerHTML = `${iconHtml}<div class="flex-grow-1 overflow-hidden"><div class="fw-semibold text-truncate">${f.name}</div><small class="text-muted">${formatSize(f.size)}</small></div><button class="file-q-remove" data-i="${i}"><i class="bi bi-x-circle"></i></button>`
+        list.appendChild(div)
+    })
+    list.querySelectorAll('.file-q-remove').forEach(btn => btn.addEventListener('click', () => { docQueueFiles.splice(Number(btn.dataset.i),1); renderDocQueue() }))
+    badge.textContent = docQueueFiles.length > 0 ? `${docQueueFiles.length} รอ` : ''
+    badge.style.display = docQueueFiles.length > 0 ? '' : 'none'
+}
+
+// ── IMG QUEUE ──
+const imgDropZone  = document.getElementById('img-drop-zone')
+const imgFileInput = document.getElementById('img-file-input')
+imgDropZone.addEventListener('click', () => imgFileInput.click())
+imgDropZone.addEventListener('dragover', e => { e.preventDefault(); imgDropZone.classList.add('dragover') })
+imgDropZone.addEventListener('dragleave', () => imgDropZone.classList.remove('dragover'))
+imgDropZone.addEventListener('drop', e => { e.preventDefault(); imgDropZone.classList.remove('dragover'); addImgFiles([...e.dataTransfer.files]) })
+imgFileInput.addEventListener('change', () => { addImgFiles([...imgFileInput.files]); imgFileInput.value = '' })
+
+function addImgFiles(files) {
+    files.filter(f => ['image/jpeg','image/jpg','image/png'].includes(f.type)).forEach(f => {
+        if (!imgQueueFiles.find(x => x.name===f.name && x.size===f.size)) imgQueueFiles.push(f)
+    })
+    renderImgQueue()
+}
+function renderImgQueue() {
+    const list = document.getElementById('img-queue-list')
+    const badge = document.getElementById('img-queue-count')
+    list.innerHTML = ''
+    imgQueueFiles.forEach((f, i) => {
+        const div = document.createElement('div'); div.className = 'file-q-item'
+        div.innerHTML = `<img src="${URL.createObjectURL(f)}" alt=""><div class="flex-grow-1 overflow-hidden"><div class="fw-semibold text-truncate">${f.name}</div><small class="text-muted">${formatSize(f.size)}</small></div><button class="file-q-remove" data-i="${i}"><i class="bi bi-x-circle"></i></button>`
+        list.appendChild(div)
+    })
+    list.querySelectorAll('.file-q-remove').forEach(btn => btn.addEventListener('click', () => { imgQueueFiles.splice(Number(btn.dataset.i),1); renderImgQueue() }))
+    badge.textContent = imgQueueFiles.length > 0 ? `${imgQueueFiles.length} รอ` : ''
+    badge.style.display = imgQueueFiles.length > 0 ? '' : 'none'
+}
+
+// ── UPLOAD AFTER SAVE ──
+async function uploadQueuedDocs(resourceId) {
+    if (!docQueueFiles.length) return
+    const fd = new FormData()
+    docQueueFiles.forEach(f => fd.append('files', f))
+    fd.append(RESOURCE_ID_KEY, resourceId)
+    const res = await fetch('/api/documents/upload', { method: 'POST', body: fd })
+    const data = await res.json()
+    if (!data.success) throw new Error(data.error || 'อัปโหลดเอกสารล้มเหลว')
+    docQueueFiles = []; renderDocQueue()
+    return data
+}
+
+async function uploadQueuedImgs(mapId) {
+    if (!imgQueueFiles.length) return
+    const imageType = document.querySelector('input[name="imgType"]:checked')?.value || ''
+    const fd = new FormData()
+    imgQueueFiles.forEach(f => fd.append('files', f))
+    if (mapId) fd.append('mapId', mapId)
+    if (imageType) fd.append('imageType', imageType)
+    const res = await fetch('/api/map-images/upload', { method: 'POST', body: fd })
+    const data = await res.json()
+    if (!data.success) throw new Error(data.error || 'อัปโหลดรูปภาพล้มเหลว')
+    imgQueueFiles = []; renderImgQueue()
+    return data
+}
+
+// ── LOAD EXISTING (EDIT MODE) ──
+async function loadExistingDocs(resourceId) {
+    const section = document.getElementById('doc-existing-section')
+    section.style.display = 'block'
+    const tbody = document.getElementById('doc-existing-tbody')
+    try {
+        const res = await fetch(`/api/documents/db?${RESOURCE_ID_KEY}=${resourceId}`)
+        const data = await res.json()
+        if (!data.success || !data.data.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2 small">ยังไม่มีเอกสาร</td></tr>'; return }
+        tbody.innerHTML = data.data.map(r => `
+          <tr>
+            <td>${r.fileType==='image' ? `<img src="${r.url}" class="img-thumb-sm">` : `<span class="badge-${r.fileType||'doc'}">${(r.fileType||'').toUpperCase()||'—'}</span>`}</td>
+            <td><div class="text-truncate" style="max-width:150px;" title="${r.namefile}">${r.namefile}</div></td>
+            <td>${typeBadge(r.fileType)}</td>
+            <td><small>${r.size ? formatSize(r.size) : '-'}</small></td>
+            <td class="text-end">
+              <a href="${r.url}" target="_blank" class="btn btn-outline-secondary btn-sm py-0 me-1"><i class="bi bi-eye"></i></a>
+              <button class="btn btn-outline-danger btn-sm py-0" onclick="deleteDoc(${r.id})"><i class="bi bi-trash"></i></button>
+            </td>
+          </tr>`).join('')
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-2 small">โหลดไม่สำเร็จ</td></tr>' }
+}
+
+async function deleteDoc(id) {
+    if (!confirm('ต้องการลบเอกสารนี้?')) return
+    const res = await fetch(`/api/documents/db/${id}`, { method: 'DELETE' })
+    const data = await res.json()
+    if (data.success) loadExistingDocs(recordId)
+    else alert(data.error || 'ลบไม่สำเร็จ')
+}
+
+async function loadExistingImgs(resourceId) {
+    const section = document.getElementById('img-existing-section')
+    section.style.display = 'block'
+    const grid = document.getElementById('img-existing-grid')
+    try {
+        const res = await fetch(`/api/map-images?${RESOURCE_ID_KEY}=${resourceId}`)
+        const data = await res.json()
+        if (!data.success || !data.data.length) { grid.innerHTML = '<div class="col-12 text-center text-muted small py-1">ยังไม่มีรูปภาพ</div>'; return }
+        grid.innerHTML = data.data.map(r => `
+          <div class="col-6">
+            <div class="border rounded p-1" style="font-size:0.74rem;">
+              <img src="${r.url}" class="w-100 rounded mb-1" style="height:80px;object-fit:cover;" onerror="this.src=''">
+              <div class="text-truncate text-muted">${r.namefile}</div>
+              <div class="d-flex gap-1 mt-1">
+                <a href="${r.url}" target="_blank" class="btn btn-outline-secondary btn-sm py-0 flex-fill"><i class="bi bi-eye"></i></a>
+                <button class="btn btn-outline-danger btn-sm py-0 flex-fill" onclick="deleteMapImg(${r.id})"><i class="bi bi-trash"></i></button>
+              </div>
+            </div>
+          </div>`).join('')
+    } catch(e) { grid.innerHTML = '<div class="col-12 text-center text-danger small py-1">โหลดไม่สำเร็จ</div>' }
+}
+
+async function deleteMapImg(id) {
+    if (!confirm('ต้องการลบรูปภาพนี้?')) return
+    const res = await fetch(`/api/map-images/${id}`, { method: 'DELETE' })
+    const data = await res.json()
+    if (data.success) loadExistingImgs(recordId)
+    else alert(data.error || 'ลบไม่สำเร็จ')
+}
+
+document.getElementById('doc-refresh-btn').addEventListener('click', () => { if (recordId) loadExistingDocs(recordId) })
+document.getElementById('img-refresh-btn').addEventListener('click', () => { if (recordId) loadExistingImgs(recordId) })
+
+// ============================================================
+// DB MAP LIST — planProject
+// ============================================================
+let dbGeoFeatures = []
+let filteredFeatures = []
+let selectedGeoFeature = null
+
+function fillFormFields(code, label, barLabel) {
+    const bar = document.getElementById('geo-selected-bar')
+    if (bar) { bar.style.display = 'block'; document.getElementById('geo-selected-label').textContent = barLabel || label || '—' }
+}
+
+async function loadGeoData() {
+    try {
+        const dbRes = await fetch('/api/generic-geojson/db-geojson/planProject').catch(() => ({ json: () => ({ features: [] }) }))
+        const dbGeo = await dbRes.json()
+        dbGeoFeatures = (dbGeo.features || []).map(f => ({
+            ...f, _source: 'db',
+            properties: { ...f.properties, name_pro: f.properties?.name_pro || '', name_road: f.properties?.name_road || f.properties?.name_local || '' }
+        }))
+        filteredFeatures = dbGeoFeatures
+        renderFeatList(filteredFeatures)
+    } catch (e) {
+        const el = document.getElementById('feat-list-loading')
+        if (el) el.textContent = 'โหลดข้อมูลไม่สำเร็จ'
+    }
+}
+
+function renderFeatList(features) {
+    const wrap = document.getElementById('feat-list-wrap')
+    if (!features.length) { wrap.innerHTML = '<div class="text-muted ps-1" style="font-size:0.78rem;">ไม่พบข้อมูล</div>'; return }
+    wrap.innerHTML = features.slice(0, 60).map((f, i) => {
+        const p = f.properties || {}
+        const code = p.name_pro || '—'
+        const name = p.name_road || p.name_local || '—'
+        const isSelected = selectedGeoFeature &&
+            p.name_local === selectedGeoFeature.properties?.name_local &&
+            p._resourceId === selectedGeoFeature.properties?._resourceId
+        return `<div class="feat-item ${isSelected ? 'selected' : ''}" data-feat-idx="${i}" data-source="db">
+            <span class="zone-code-badge" style="background:rgba(13,110,253,0.10);color:#0d6efd;">${p._resourceId || '—'}</span>
+            <span class="flex-fill text-truncate">${name}</span>
+            <span class="badge text-bg-primary flex-shrink-0" style="font-size:0.6rem;">DB</span>
+            ${isSelected ? '<i class="bi bi-check-circle-fill text-success flex-shrink-0" style="font-size:0.8rem;"></i>' : ''}
+        </div>`
+    }).join('') + (features.length > 60 ? `<div class="text-muted ps-1 py-1" style="font-size:0.71rem;">และอีก ${features.length - 60} รายการ...</div>` : '')
+
+    wrap.querySelectorAll('.feat-item').forEach(item => {
+        item.addEventListener('click', async () => {
+            const f = filteredFeatures[parseInt(item.dataset.featIdx)]
+            const p = f.properties || {}
+            const label = p.name_road || p.name_local || '—'
+            const rid   = p._resourceId || ''
+            selectedGeoFeature = f
+            renderFeatList(filteredFeatures)
+            fillFormFields('', label, `[DB] ${rid ? '#' + rid + ' — ' : ''}${label}`)
+            clearKmlLayer()
+            kmlPreviewLayer = geoJsonAdapter.renderToLeaflet(pointMap, { type: 'FeatureCollection', features: [f] }, { fitBounds: true })
+
+            // Fill all PlanProject form fields from DB record (no dispatchEvent — avoids FormManager reset)
+            if (rid) {
+                try {
+                    const res = await apiClient.show(RESOURCE_NAME, rid)
+                    const rec = res?.record?.params || res?.params || {}
+                    const STATUS_MAP = {
+                        'pending': 'รอดำเนินการ', 'in progress': 'กำลังดำเนินการ',
+                        'inprogress': 'กำลังดำเนินการ', 'completed': 'เสร็จสิ้น',
+                        'cancelled': 'ยกเลิก', 'canceled': 'ยกเลิก'
+                    }
+                    const setVal = (name, val) => {
+                        if (val == null || val === '') return
+                        const el = document.querySelector(`[name="${name}"]`)
+                        if (!el) return
+                        if (el.tagName === 'SELECT') {
+                            // Try direct match first, then normalise via map
+                            const opts = [...el.options].map(o => o.value)
+                            if (opts.includes(val)) { el.value = val; return }
+                            const mapped = STATUS_MAP[String(val).toLowerCase().trim()]
+                            if (mapped && opts.includes(mapped)) el.value = mapped
+                        } else {
+                            el.value = val
+                        }
+                    }
+                    // ไม่ fill 'code' — unique per record, ต้องกรอกเอง
+                    setVal('name',       rec.name)
+                    setVal('category',   rec.category)
+                    setVal('startDate',  rec.startDate?.substring(0, 10))
+                    setVal('endDate',    rec.endDate?.substring(0, 10))
+                    setVal('supervisor', rec.supervisor)
+                    setVal('budget',     rec.budget)
+                    setVal('status',     rec.status)
+                } catch(e) {
+                    // fallback: fill name only from map properties
+                    const nameEl = document.querySelector('[name="name"]')
+                    if (nameEl && label !== '—') nameEl.value = label
+                }
+            }
+        })
+    })
+}
+
+document.getElementById('btn-deselect-geo').addEventListener('click', () => {
+    selectedGeoFeature = null
+    document.getElementById('geo-selected-bar').style.display = 'none'
+    renderFeatList(filteredFeatures)
+    clearKmlLayer()
+})
+
+document.getElementById('zone-search-input').addEventListener('input', function () {
+    const q = this.value.trim().toLowerCase()
+    if (!q) { filteredFeatures = dbGeoFeatures; renderFeatList(filteredFeatures); return }
+    filteredFeatures = dbGeoFeatures.filter(f =>
+        f.properties?.name_road?.toLowerCase().includes(q) ||
+        f.properties?.name_local?.toLowerCase().includes(q))
+    renderFeatList(filteredFeatures)
+})
+
+document.getElementById('btn-clear-search').addEventListener('click', () => {
+    document.getElementById('zone-search-input').value = ''
+    filteredFeatures = dbGeoFeatures
+    renderFeatList(filteredFeatures)
+})
+
+document.getElementById('btn-show-db').addEventListener('click', async () => {
+    clearKmlLayer()
+    try {
+        const fc = await fetch('/api/generic-geojson/db-geojson/planProject').then(r => r.json())
+        if (!fc.features?.length) { return }
+        kmlPreviewLayer = geoJsonAdapter.renderToLeaflet(pointMap, fc, {
+            fitBounds: true,
+            onEachFeature: (f, layer) => {
+                const p = f.properties || {}
+                const label = p.name_road || p.name_local || '—'
+                layer.bindPopup(`<b>${label}</b><br><small class="text-muted">#${p._resourceId || '—'}</small>`)
+            }
+        })
+    } catch (e) { console.error(e) }
+})
+
+// ============================================================
+// KML / GEOJSON FILE UPLOAD
+// ============================================================
+const dropZone  = document.getElementById('drop-zone')
+const fileInput = document.getElementById('kml-file-input')
+
+document.getElementById('browse-link').addEventListener('click', e => { e.stopPropagation(); fileInput.click() })
+dropZone.addEventListener('click', () => fileInput.click())
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover') })
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'))
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) handleFileLoad(e.dataTransfer.files[0]) })
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFileLoad(fileInput.files[0]); fileInput.value = '' })
+
+async function handleFileLoad(file) {
+    const errEl = document.getElementById('kml-load-error')
+    errEl.textContent = ''
+    try {
+        const ext = file.name.split('.').pop().toLowerCase()
+        let geo
+        if (ext === 'kml') {
+            geo = await geoJsonAdapter.loadKmlFromFile(file)
+        } else if (['geojson','json'].includes(ext)) {
+            geo = await geoJsonAdapter.loadFromFile(file)
+        } else { errEl.textContent = 'รองรับเฉพาะ .kml และ .geojson'; return }
+        if (!geoJsonAdapter.validate(geo)) { errEl.textContent = 'ไฟล์ไม่ถูกต้องหรือไม่มี features'; return }
+        kmlGeoData = geo
+        const stats = geoJsonAdapter.stats(geo)
+        document.getElementById('kml-filename').textContent = file.name
+        document.getElementById('kml-feat-count').textContent = `${stats.count} features`
+        document.getElementById('kml-loaded-section').style.display = 'block'
+        renderKmlFeatList(geo.features)
+        showKmlOnMap()
+    } catch(err) { errEl.textContent = `โหลดไม่สำเร็จ: ${err.message}`; kmlGeoData = null }
+}
+
+function renderKmlFeatList(features) {
+    const el = document.getElementById('kml-feature-list')
+    el.innerHTML = features.slice(0,15).map((f,i) => {
+        const p = f.properties || {}
+        const code = p.name || p.name_local || `#${i+1}`
+        return `<div class="feat-item"><span class="feat-badge">${code}</span><span class="flex-fill text-truncate" style="font-size:0.77rem;">${p.description||''}</span><span class="text-muted flex-shrink-0" style="font-size:0.69rem;">${f.geometry?.type||'?'}</span></div>`
+    }).join('') + (features.length > 15 ? `<div class="text-muted ps-1" style="font-size:0.71rem;">+${features.length-15} รายการ</div>` : '')
+}
+
+function showKmlOnMap() {
+    clearKmlLayer()
+    if (!kmlGeoData) return
+    kmlPreviewLayer = geoJsonAdapter.renderToLeaflet(pointMap, kmlGeoData, { fitBounds: true })
+}
+
+function clearKmlLayer() { if (kmlPreviewLayer) { pointMap.removeLayer(kmlPreviewLayer); kmlPreviewLayer = null } }
+
+function clearKmlData() {
+    kmlGeoData = null; clearKmlLayer()
+    document.getElementById('kml-loaded-section').style.display = 'none'
+    document.getElementById('kml-load-error').textContent = ''
+}
+
+document.getElementById('btn-kml-clear').addEventListener('click', clearKmlData)
+document.getElementById('btn-kml-show-map').addEventListener('click', showKmlOnMap)
+
+// ============================================================
+// OVERRIDE handleFormSubmit
+// ============================================================
+async function customHandleFormSubmit(data, id) {
+    const overlay     = document.getElementById('loadingOverlay')
+    const loadingText = document.getElementById('loadingText')
+    try {
+        overlay.style.display = 'flex'
+        loadingText.textContent = 'กำลังบันทึกข้อมูล...'
+
+        // 1. Save record
+        let result
+        if (id) { result = await apiClient.update(RESOURCE_NAME, id, data) }
+        else    { result = await apiClient.create(RESOURCE_NAME, data) }
+        const savedId = result?.record?.id || result?.params?.id || result?.id
+
+        // 2. Attach KML → /api/generic-geojson/attach-map
+        let mapId = existingMapId
+        const hasFeatures = kmlGeoData?.features?.length > 0
+
+        if (savedId && hasFeatures) {
+            loadingText.textContent = 'กำลังบันทึกแผนที่...'
+            const nameField = document.querySelector('[name="projectName"],[name="name"],[name="topic"]')?.value?.trim() || ''
+            const features = kmlGeoData.features.map((f, i) => ({
+                ...f,
+                properties: { ...(f.properties || {}), name: kmlGeoData.features.length > 1 ? `${nameField} -${i+1}` : nameField }
+            }))
+            const attachRes = await fetch('/api/generic-geojson/attach-map', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resourceType: RESOURCE_TYPE, resourceId: savedId, features })
+            })
+            const attachData = await attachRes.json().catch(() => ({}))
+            if (attachData.mapId) mapId = attachData.mapId
+            clearKmlData()
+        } else if (savedId && !mapId) {
+            try {
+                const mRes  = await fetch(`/api/generic-geojson/map-id/${RESOURCE_TYPE}/${savedId}`)
+                const mData = await mRes.json()
+                if (mData.mapId) mapId = mData.mapId
+            } catch (_) {}
+        }
+
+        // 2b. Sync name_local if needed
+        if (savedId && mapId && kmlGeoData) {
+            const nameVal = document.querySelector('[name="projectName"],[name="name"],[name="topic"]')?.value?.trim() || null
+            if (nameVal) {
+                fetch('/api/generic-geojson/update-name', {
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ resourceType: RESOURCE_TYPE, resourceId: savedId, nameLocal: nameVal })
+                }).catch(() => {})
+            }
+        }
+
+        // 3. Upload queued documents
+        if (savedId && docQueueFiles.length) {
+            loadingText.textContent = `กำลังอัปโหลดเอกสาร ${docQueueFiles.length} ไฟล์...`
+            await uploadQueuedDocs(savedId)
+        }
+
+        // 4. Upload queued map images
+        if (mapId && imgQueueFiles.length) {
+            loadingText.textContent = `กำลังอัปโหลดรูปภาพ ${imgQueueFiles.length} รูป...`
+            await uploadQueuedImgs(mapId)
+        }
+
+        overlay.style.display = 'none'
+        if (crudManager?.showSuccess) crudManager.showSuccess(id ? 'อัปเดตสำเร็จ' : 'สร้างสำเร็จ')
+        setTimeout(() => { window.location.href = LIST_URL }, 800)
+
+    } catch(err) {
+        overlay.style.display = 'none'
+        if (crudManager?.showError) crudManager.showError(err.message || 'เกิดข้อผิดพลาด')
+        console.error('Save error:', err)
+    }
+}
+
+// ============================================================
+// PAGE INIT
+// ============================================================
+async function loadComponents() {
+    await Promise.all([
+        loadComponent('../../components/navMenu.html', 'sidebar'),
+        loadComponent('../../components/header.html', 'main-header')
+    ])
+    initPage()
+}
+
+async function initPage() {
+    const resourceConfig = RESOURCES[RESOURCE_NAME]
+    const urlParams = new URLSearchParams(window.location.search)
+    recordId = urlParams.get('id')
+    const isEdit = !!recordId
+    const action = isEdit ? 'แก้ไข' : 'เพิ่ม'
+
+    document.getElementById('formTitle').textContent    = `${action}${resourceConfig?.label || ''}`
+    document.getElementById('formSubtitle').textContent = isEdit ? 'แก้ไขข้อมูลที่มีอยู่' : `กรอกข้อมูลเพื่อสร้าง${resourceConfig?.label || ''}ใหม่`
+    document.title = `${action}${resourceConfig?.label || ''} - Backoffice`
+
+    const resourcePath = getResourcePath(RESOURCE_NAME)
+    if (window.setBreadcrumb) {
+        setBreadcrumb([
+            { label: 'หน้าหลัก', href: '/frontend/pages/dashboard.html' },
+            { label: resourceConfig?.labelPlural || '', href: LIST_URL },
+            { label: `${action}${resourceConfig?.label || ''}` }
+        ])
+    }
+
+    crudManager = new CrudManager(RESOURCE_NAME)
+    await crudManager.init()
+    crudManager.handleFormSubmit = customHandleFormSubmit
+    await loadGeoData()
+
+    if (isEdit) {
+        try {
+            // Load existing map geometry
+            try {
+                const mRes  = await fetch(`/api/generic-geojson/map-id/${RESOURCE_TYPE}/${recordId}`)
+                const mData = await mRes.json()
+                existingMapId = mData.mapId || null
+                if (mData.geoJsonData) {
+                    const geo = mData.geoJsonData
+                    const fc = geo.type === 'FeatureCollection' ? geo : { type:'FeatureCollection', features: [geo] }
+                    clearKmlLayer()
+                    kmlPreviewLayer = geoJsonAdapter.renderToLeaflet(pointMap, fc, { fitBounds: true })
+                }
+                // Restore DB list selection
+                if (mData.geoJsonData) {
+                    const geo = mData.geoJsonData
+                    const fc = geo.type === 'FeatureCollection' ? geo : { type: 'FeatureCollection', features: [geo] }
+                    const firstProps = fc.features[0]?.properties || {}
+                    const savedName = firstProps.name_local || firstProps.name || null
+                    if (savedName) {
+                        const matched = filteredFeatures.find(f =>
+                            (f.properties?.name_local === savedName) ||
+                            (f.properties?.name_road === savedName))
+                        if (matched) {
+                            selectedGeoFeature = matched
+                            renderFeatList(filteredFeatures)
+                            fillFormFields('', matched.properties?.name_road || matched.properties?.name_local || '', `[DB] ${matched.properties?.name_road || savedName}`)
+                        }
+                    }
+                }
+            } catch(_) {}
+
+            loadExistingDocs(recordId)
+            loadExistingImgs(recordId)
+        } catch(e) {
+            console.warn('ไม่สามารถโหลดข้อมูลแผนที่เดิม:', e.message)
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadComponents)
+</script>
+</body>
+</html>

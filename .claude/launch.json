@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:\\Users\\ASUS\\AppData\\Roaming\\npm\\node_modules\\nodemon\\bin\\nodemon.js", "index.js"],
+      "port": 3001
+    },
+    {
+      "name": "start",
+      "runtimeExecutable": "npm.cmd",
+      "runtimeArgs": ["run", "start"],
+      "port": 3001
+    }
+  ]
+}

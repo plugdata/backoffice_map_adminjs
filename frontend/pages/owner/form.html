@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ฟอร์มเจ้าของกรรมสิทธิ์ - Backoffice</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="../../assets/css/style.css" rel="stylesheet">
+    <link href="../../assets/css/admin.css" rel="stylesheet">
+    <style>
+        /* ─── Address Search ─── */
+        .addr-search-wrap { position: relative; }
+        .addr-dropdown {
+            position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 1060;
+            background: #fff; border: 1px solid #dee2e6; border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12); max-height: 300px;
+            overflow-y: auto; display: none;
+        }
+        .addr-dropdown.show { display: block; }
+        .addr-opt {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 14px; cursor: pointer;
+            border-bottom: 1px solid #f1f5f9; transition: background .1s;
+        }
+        .addr-opt:last-child { border-bottom: none; }
+        .addr-opt:hover, .addr-opt.kbd-active { background: #f0fdf4; }
+        .addr-opt .addr-zip {
+            font-size: 0.72rem; font-weight: 700; color: #fff;
+            background: #10b981; border-radius: 6px; padding: 2px 7px;
+            flex-shrink: 0; margin-top: 2px; min-width: 50px; text-align: center;
+        }
+        .addr-opt .addr-main { font-size: 0.88rem; font-weight: 600; color: #1e293b; }
+        .addr-opt .addr-sub  { font-size: 0.78rem; color: #64748b; margin-top: 1px; }
+        .addr-opt mark { background: #fef9c3; border-radius: 2px; padding: 0 1px; }
+        .addr-no-result { padding: 14px; text-align: center; color: #94a3b8; font-size: 0.83rem; }
+        .addr-filled-bar {
+            display: flex; align-items: center; gap: 8px; margin-top: 6px;
+            background: #f0fdf4; border: 1px solid #6ee7b7; border-radius: 8px;
+            padding: 7px 12px; font-size: 0.82rem;
+        }
+        .addr-filled-bar .addr-tag {
+            background: #dcfce7; color: #15803d; border-radius: 6px;
+            padding: 1px 8px; font-size: 0.75rem; font-weight: 600;
+        }
+
+        /* ─── Section header ─── */
+        .section-label {
+            font-size: 0.75rem; font-weight: 700; letter-spacing: .06em;
+            text-transform: uppercase; color: #64748b;
+            border-bottom: 2px solid #f1f5f9; padding-bottom: 6px; margin-bottom: 16px;
+        }
+
+        /* ─── Field group ─── */
+        .form-label { font-size: 0.83rem; font-weight: 600; margin-bottom: 4px; color: #374151; }
+        .form-control, .form-select {
+            font-size: 0.88rem; border-radius: 8px; border-color: #e2e8f0;
+            padding: 8px 12px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.12);
+        }
+
+        /* ─── Title select style ─── */
+        .title-btn-group .btn { border-radius: 8px !important; font-size: 0.82rem; padding: 7px 12px; }
+
+        /* ─── Readonly address fields ─── */
+        .addr-readonly {
+            background: #f8fafc; color: #475569;
+            border: 1px dashed #cbd5e1; border-radius: 8px;
+            padding: 8px 12px; font-size: 0.88rem; min-height: 38px;
+        }
+        .addr-readonly.filled { background: #f0fdf4; border-color: #6ee7b7; color: #15803d; font-weight: 600; }
+
+        /* ─── Owner type ─── */
+        .owner-type-selector .form-check-label { font-size: 0.85rem; cursor: pointer; }
+        .owner-type-selector .form-check { padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; cursor: pointer; }
+        .owner-type-selector .form-check:has(input:checked) { border-color: #10b981; background: #f0fdf4; }
+    </style>
+</head>
+
+<body>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="d-flex">
+    <nav class="sidebar bg-white border-end" id="sidebar"></nav>
+
+    <main class="main-content flex-fill">
+        <header id="main-header" class="bg-white border-bottom p-3 sticky-top shadow-sm"></header>
+
+        <div class="page-content">
+            <div class="page-header">
+                <h1 class="page-title" id="formTitle">เพิ่มเจ้าของกรรมสิทธิ์</h1>
+                <p class="page-subtitle" id="formSubtitle">กรอกข้อมูลเพื่อสร้างเจ้าของกรรมสิทธิ์ใหม่</p>
+            </div>
+
+            <form id="ownerForm" novalidate>
+            <div class="row g-3">
+
+                <!-- ══════════════════════════════════════
+                     LEFT COL — ข้อมูลส่วนตัว + ที่อยู่
+                ══════════════════════════════════════ -->
+                <div class="col-lg-8">
+
+                    <!-- ── ข้อมูลส่วนตัว ── -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="section-label"><i class="bi bi-person me-1"></i>ข้อมูลส่วนตัว</div>
+
+                            <!-- Row 1: คำนำหน้า + ชื่อ + นามสกุล -->
+                            <div class="row g-2 mb-3">
+                                <div class="col-12 col-sm-3">
+                                    <label class="form-label">คำนำหน้า</label>
+                                    <select class="form-select" name="title_owner" id="f_title_owner">
+                                        <option value="">--</option>
+                                        <option value="นาย">นาย</option>
+                                        <option value="นาง">นาง</option>
+                                        <option value="นางสาว">นางสาว</option>
+                                        <option value="ด.ช.">ด.ช.</option>
+                                        <option value="ด.ญ.">ด.ญ.</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-5">
+                                    <label class="form-label">ชื่อ <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="first_name" id="f_first_name"
+                                        placeholder="ชื่อ" required>
+                                </div>
+                                <div class="col-12 col-sm-4">
+                                    <label class="form-label">นามสกุล <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="last_name" id="f_last_name"
+                                        placeholder="นามสกุล" required>
+                                </div>
+                            </div>
+
+                            <!-- Row 2: เลขบัตร + โทรศัพท์ -->
+                            <div class="row g-2 mb-3">
+                                <div class="col-12 col-sm-7">
+                                    <label class="form-label">เลขบัตรประชาชน</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="no_id" id="f_no_id"
+                                            placeholder="x-xxxx-xxxxx-xx-x" maxlength="17"
+                                            autocomplete="off" inputmode="numeric">
+                                        <span class="input-group-text px-2" id="noIdStatus" style="min-width:34px;justify-content:center;"></span>
+                                    </div>
+                                    <div id="noIdFeedback" class="form-text mt-1" style="font-size:0.78rem;min-height:18px;"></div>
+                                </div>
+                                <div class="col-12 col-sm-5">
+                                    <label class="form-label">โทรศัพท์</label>
+                                    <input type="text" class="form-control" name="phone" id="f_phone"
+                                        placeholder="0xx-xxx-xxxx" maxlength="13"
+                                        autocomplete="off" inputmode="numeric">
+                                    <div id="phoneFeedback" class="form-text mt-1" style="font-size:0.78rem;min-height:18px;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Row 3: ประเภทเจ้าของ -->
+                            <div class="mb-1">
+                                <label class="form-label">ประเภทเจ้าของ</label>
+                                <div class="d-flex flex-wrap gap-2 owner-type-selector">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="owner_type"
+                                            id="ot_person" value="บุคคลธรรมดา" checked>
+                                        <label class="form-check-label" for="ot_person">
+                                            <i class="bi bi-person me-1"></i>บุคคลธรรมดา
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="owner_type"
+                                            id="ot_org" value="นิติบุคคล">
+                                        <label class="form-check-label" for="ot_org">
+                                            <i class="bi bi-building me-1"></i>นิติบุคคล
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="owner_type"
+                                            id="ot_govt" value="หน่วยงานรัฐ">
+                                        <label class="form-check-label" for="ot_govt">
+                                            <i class="bi bi-bank me-1"></i>หน่วยงานรัฐ
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── ที่อยู่ ── -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="section-label"><i class="bi bi-geo-alt me-1"></i>ที่อยู่</div>
+
+                            <!-- Address Search (Shopee-style) -->
+                            <div class="mb-3 addr-search-wrap" id="addrSearchWrap">
+                                <label class="form-label">
+                                    <i class="bi bi-search me-1 text-success"></i>
+                                    ค้นหาที่อยู่อัตโนมัติ
+                                    <small class="text-muted fw-normal">— พิมพ์ ตำบล / อำเภอ / จังหวัด / รหัสไปรษณีย์</small>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white" style="border-color:#e2e8f0;">
+                                        <i class="bi bi-search text-success"></i>
+                                    </span>
+                                    <input type="text" class="form-control border-start-0" id="addrSearchInput"
+                                        placeholder="เช่น สตูล / หาดใหญ่ / ตรัง / 93000..."
+                                        autocomplete="off" style="border-color:#e2e8f0;">
+                                    <button type="button" class="btn btn-outline-secondary" id="addrSearchClear"
+                                        style="display:none; border-color:#e2e8f0;">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                                <div class="addr-dropdown" id="addrDropdown"></div>
+
+                                <!-- filled bar แสดงหลังเลือก -->
+                                <div class="addr-filled-bar" id="addrFilledBar" style="display:none;">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <div class="flex-grow-1" id="addrFilledText"></div>
+                                    <button type="button" class="btn btn-link btn-sm text-danger p-0" id="addrClearFilled">
+                                        <i class="bi bi-x-circle"></i> เปลี่ยน
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Row 4: บ้านเลขที่ + ถนน -->
+                            <div class="row g-2 mb-3">
+                                <div class="col-12 col-sm-4">
+                                    <label class="form-label">บ้านเลขที่</label>
+                                    <input type="text" class="form-control" name="house_no" id="f_house_no"
+                                        placeholder="เช่น 99/1">
+                                </div>
+                                <div class="col-12 col-sm-8">
+                                    <label class="form-label">ถนน / ซอย</label>
+                                    <input type="text" class="form-control" name="road" id="f_road"
+                                        placeholder="เช่น ถนนราชดำเนิน">
+                                </div>
+                            </div>
+
+                            <!-- Row 5: ตำบล + อำเภอ + จังหวัด + รหัสไปรษณีย์ (auto-filled) -->
+                            <div class="row g-2">
+                                <div class="col-6 col-sm-3">
+                                    <label class="form-label">ตำบล / แขวง</label>
+                                    <div class="addr-readonly" id="f_subdistrict_display">—</div>
+                                    <input type="hidden" name="subdistrict" id="f_subdistrict">
+                                </div>
+                                <div class="col-6 col-sm-3">
+                                    <label class="form-label">อำเภอ / เขต</label>
+                                    <div class="addr-readonly" id="f_district_display">—</div>
+                                    <input type="hidden" name="district" id="f_district">
+                                </div>
+                                <div class="col-6 col-sm-3">
+                                    <label class="form-label">จังหวัด</label>
+                                    <div class="addr-readonly" id="f_province_display">—</div>
+                                    <input type="hidden" name="province" id="f_province">
+                                </div>
+                                <div class="col-6 col-sm-3">
+                                    <label class="form-label">รหัสไปรษณีย์</label>
+                                    <div class="addr-readonly" id="f_postcode_display">—</div>
+                                    <input type="hidden" name="postcode" id="f_postcode">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── ข้อมูลองค์กร (แสดงเมื่อเลือกนิติบุคคล / หน่วยงานรัฐ) ── -->
+                    <div class="card mb-3" id="orgSection" style="display:none;">
+                        <div class="card-body">
+                            <div class="section-label"><i class="bi bi-building me-1"></i>ข้อมูลองค์กร</div>
+                            <div class="row g-2">
+                                <div class="col-12 col-sm-5">
+                                    <label class="form-label">ชื่อองค์กร / หน่วยงาน</label>
+                                    <input type="text" class="form-control" name="org_name" id="f_org_name"
+                                        placeholder="ชื่อองค์กร">
+                                </div>
+                                <div class="col-12 col-sm-7">
+                                    <label class="form-label">ที่อยู่องค์กร</label>
+                                    <input type="text" class="form-control" name="org_address" id="f_org_address"
+                                        placeholder="ที่อยู่องค์กร">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /col-lg-8 -->
+
+                <!-- ══════════════════════════════════════
+                     RIGHT COL — เลขที่โฉนด / บันทึก
+                ══════════════════════════════════════ -->
+                <div class="col-lg-4">
+
+      
+
+                    <!-- ── ตัวอย่างข้อมูล ── -->
+                    <div class="card mb-3 border-0 bg-light">
+                        <div class="card-body py-3">
+                            <div class="section-label mb-2"><i class="bi bi-eye me-1"></i>ตัวอย่างข้อมูล</div>
+                            <div id="previewCard" class="small text-muted">กรอกข้อมูลเพื่อดูตัวอย่าง...</div>
+                        </div>
+                    </div>
+
+                    <!-- ── ปุ่มบันทึก ── -->
+                    <div class="card border-0">
+                        <div class="card-body pt-0">
+                            <div class="d-grid gap-2">
+                                <button type="submit" form="ownerForm" class="btn btn-success btn-lg">
+                                    <i class="bi bi-check-lg me-1"></i>
+                                    <span id="submitBtnLabel">บันทึกข้อมูล</span>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                                    <i class="bi bi-x me-1"></i>ยกเลิก
+                                </button>
+                            </div>
+                            <div id="formError" class="alert alert-danger mt-2 py-2 small" style="display:none;"></div>
+                        </div>
+                    </div>
+
+                </div><!-- /col-lg-4 -->
+
+            </div><!-- /row -->
+            </form>
+        </div><!-- /page-content -->
+    </main>
+</div>
+
+<div id="loadingOverlay">
+    <div class="loading-spinner">
+        <div class="spinner-border text-success" role="status"><span class="visually-hidden">กำลังโหลด...</span></div>
+        <div class="mt-2">กำลังบันทึกข้อมูล...</div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/apiClient.js"></script>
+<script src="../../assets/js/auth.js"></script>
+<script src="../../assets/js/i18n.js"></script>
+<script src="../../assets/js/app.js"></script>
+
+<script>
+if (!authManager.requireAuth()) {}
+
+const urlParams = new URLSearchParams(window.location.search)
+const recordId  = urlParams.get('id')
+const isEdit    = !!recordId
+
+// ══════════════════════════════════════════════
+// ADDRESS SEARCH (Shopee-style)
+// ══════════════════════════════════════════════
+const addrSearchInput = document.getElementById('addrSearchInput')
+const addrDropdown    = document.getElementById('addrDropdown')
+const addrSearchClear = document.getElementById('addrSearchClear')
+const addrFilledBar   = document.getElementById('addrFilledBar')
+const addrFilledText  = document.getElementById('addrFilledText')
+const addrClearFilled = document.getElementById('addrClearFilled')
+
+let addrSearchTimer = null
+let kbdIndex = -1
+
+function highlight(text, q) {
+    if (!q) return text
+    const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi')
+    return text.replace(re, '<mark>$1</mark>')
+}
+
+function renderAddrDropdown(rows, q) {
+    kbdIndex = -1
+    if (!rows.length) {
+        addrDropdown.innerHTML = '<div class="addr-no-result"><i class="bi bi-search me-1"></i>ไม่พบข้อมูล — ลองพิมพ์ใหม่</div>'
+        addrDropdown.classList.add('show')
+        return
+    }
+    addrDropdown.innerHTML = rows.map((r, i) => `
+        <div class="addr-opt" data-i="${i}"
+            data-district="${r.district}" data-amphoe="${r.amphoe}"
+            data-province="${r.province}" data-zip="${r.zipcode}">
+            <div class="addr-zip">${r.zipcode}</div>
+            <div>
+                <div class="addr-main">
+                    ต.${highlight(r.district, q)}
+                    &nbsp;อ.${highlight(r.amphoe, q)}
+                </div>
+                <div class="addr-sub">จ.${highlight(r.province, q)}</div>
+            </div>
+        </div>`).join('')
+    addrDropdown.classList.add('show')
+    addrDropdown.querySelectorAll('.addr-opt').forEach(el => {
+        el.addEventListener('click', () => selectAddress(el))
+    })
+}
+
+function selectAddress(el) {
+    const district  = el.dataset.district
+    const amphoe    = el.dataset.amphoe
+    const province  = el.dataset.province
+    const zip       = el.dataset.zip
+
+    // fill hidden inputs
+    document.getElementById('f_subdistrict').value = district
+    document.getElementById('f_district').value    = amphoe
+    document.getElementById('f_province').value    = province
+    document.getElementById('f_postcode').value    = zip
+
+    // fill display elements
+    setAddrDisplay(district, amphoe, province, zip)
+
+    // show filled bar
+    addrFilledText.innerHTML = `
+        <span class="addr-tag">ต.${district}</span>
+        <span class="addr-tag ms-1">อ.${amphoe}</span>
+        <span class="addr-tag ms-1">จ.${province}</span>
+        <span class="addr-tag ms-1">${zip}</span>`
+    addrFilledBar.style.display = 'flex'
+
+    addrSearchInput.value = ''
+    addrSearchClear.style.display = 'none'
+    addrDropdown.classList.remove('show')
+    updatePreview()
+}
+
+function setAddrDisplay(district, amphoe, province, zip) {
+    const filled = val => val && val !== '' && val !== 'undefined'
+    const set = (id, val) => {
+        const el = document.getElementById(id)
+        el.textContent = filled(val) ? val : '—'
+        el.classList.toggle('filled', filled(val))
+    }
+    set('f_subdistrict_display', district)
+    set('f_district_display',    amphoe)
+    set('f_province_display',    province)
+    set('f_postcode_display',    zip)
+}
+
+function clearAddress() {
+    ['f_subdistrict','f_district','f_province','f_postcode'].forEach(id => {
+        document.getElementById(id).value = ''
+    })
+    setAddrDisplay('','','','')
+    addrFilledBar.style.display = 'none'
+    addrSearchInput.value = ''
+    addrSearchClear.style.display = 'none'
+    addrDropdown.classList.remove('show')
+    updatePreview()
+}
+
+addrSearchInput.addEventListener('input', function() {
+    const q = this.value.trim()
+    addrSearchClear.style.display = q ? '' : 'none'
+    clearTimeout(addrSearchTimer)
+    if (!q) { addrDropdown.classList.remove('show'); return }
+    addrSearchTimer = setTimeout(async () => {
+        try {
+            const rows = await fetch(`/api/address/search?q=${encodeURIComponent(q)}`).then(r => r.json())
+            renderAddrDropdown(rows, q)
+        } catch(e) {
+            addrDropdown.innerHTML = '<div class="addr-no-result text-danger">เกิดข้อผิดพลาด</div>'
+            addrDropdown.classList.add('show')
+        }
+    }, 220)
+})
+
+// keyboard navigation
+addrSearchInput.addEventListener('keydown', e => {
+    const opts = addrDropdown.querySelectorAll('.addr-opt')
+    if (!opts.length) return
+    if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        kbdIndex = Math.min(kbdIndex + 1, opts.length - 1)
+        opts.forEach((o,i) => o.classList.toggle('kbd-active', i === kbdIndex))
+        opts[kbdIndex]?.scrollIntoView({ block: 'nearest' })
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        kbdIndex = Math.max(kbdIndex - 1, 0)
+        opts.forEach((o,i) => o.classList.toggle('kbd-active', i === kbdIndex))
+        opts[kbdIndex]?.scrollIntoView({ block: 'nearest' })
+    } else if (e.key === 'Enter' && kbdIndex >= 0) {
+        e.preventDefault()
+        selectAddress(opts[kbdIndex])
+    } else if (e.key === 'Escape') {
+        addrDropdown.classList.remove('show')
+    }
+})
+
+addrSearchClear.addEventListener('click', () => {
+    addrSearchInput.value = ''
+    addrSearchClear.style.display = 'none'
+    addrDropdown.classList.remove('show')
+})
+addrClearFilled.addEventListener('click', clearAddress)
+
+document.addEventListener('click', e => {
+    if (!document.getElementById('addrSearchWrap').contains(e.target)) {
+        addrDropdown.classList.remove('show')
+    }
+})
+
+// ══════════════════════════════════════════════
+// OWNER TYPE — show/hide org section
+// ══════════════════════════════════════════════
+document.querySelectorAll('input[name="owner_type"]').forEach(r => {
+    r.addEventListener('change', function() {
+        const orgSection = document.getElementById('orgSection')
+        orgSection.style.display = ['นิติบุคคล','หน่วยงานรัฐ'].includes(this.value) ? '' : 'none'
+    })
+})
+
+// ══════════════════════════════════════════════
+// LIVE PREVIEW
+// ══════════════════════════════════════════════
+function updatePreview() {
+    const title   = document.getElementById('f_title_owner').value
+    const fname   = document.getElementById('f_first_name').value
+    const lname   = document.getElementById('f_last_name').value
+    const phone   = document.getElementById('f_phone').value
+    const noid    = document.getElementById('f_no_id').value
+    const houseNo = document.getElementById('f_house_no').value
+    const road    = document.getElementById('f_road').value
+    const sub     = document.getElementById('f_subdistrict').value
+    const dist    = document.getElementById('f_district').value
+    const prov    = document.getElementById('f_province').value
+    const zip     = document.getElementById('f_postcode').value
+    const preview = document.getElementById('previewCard')
+
+    if (!fname && !lname) { preview.innerHTML = '<span class="text-muted">กรอกข้อมูลเพื่อดูตัวอย่าง...</span>'; return }
+
+    const fullName = `${title} ${fname} ${lname}`.trim()
+    const addr = [houseNo, road, sub ? 'ต.'+sub : '', dist ? 'อ.'+dist : '', prov ? 'จ.'+prov : '', zip].filter(Boolean).join(' ')
+
+    preview.innerHTML = `
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <div style="width:36px;height:36px;border-radius:50%;background:#dcfce7;color:#16a34a;
+                        display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0;">
+                ${(fname[0]||'')+(lname[0]||'')}
+            </div>
+            <div><div class="fw-semibold" style="font-size:0.9rem;">${fullName}</div>
+                 ${phone ? `<div class="text-muted" style="font-size:0.75rem;"><i class="bi bi-telephone me-1"></i>${phone}</div>` : ''}
+            </div>
+        </div>
+        ${noid ? `<div class="text-muted mb-1"><i class="bi bi-credit-card me-1"></i>${noid}</div>` : ''}
+        ${addr ? `<div class="text-muted"><i class="bi bi-geo-alt me-1"></i>${addr}</div>` : ''}`
+}
+
+['f_title_owner','f_first_name','f_last_name','f_phone','f_house_no','f_road'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updatePreview)
+})
+document.getElementById('f_title_owner')?.addEventListener('change', updatePreview)
+
+// ══════════════════════════════════════════════
+// VALIDATION — เลขบัตรประชาชน + เบอร์โทร
+// ══════════════════════════════════════════════
+
+/** Format raw digits → x-xxxx-xxxxx-xx-x */
+function formatThaiId(raw) {
+    const d = raw.replace(/\D/g,'').slice(0,13)
+    if (!d) return ''
+    let r = d[0]
+    if (d.length > 1)  r += '-' + d.slice(1,5)
+    if (d.length > 5)  r += '-' + d.slice(5,10)
+    if (d.length > 10) r += '-' + d.slice(10,12)
+    if (d.length > 12) r += '-' + d.slice(12)
+    return r
+}
+
+/** Luhn-style Thai ID checksum */
+function validateThaiIdChecksum(digits) {
+    if (digits.length !== 13) return false
+    let sum = 0
+    for (let i = 0; i < 12; i++) sum += parseInt(digits[i]) * (13 - i)
+    return (11 - (sum % 11)) % 10 === parseInt(digits[12])
+}
+
+const noIdInput    = document.getElementById('f_no_id')
+const noIdStatus   = document.getElementById('noIdStatus')
+const noIdFeedback = document.getElementById('noIdFeedback')
+let noIdTimer = null
+let noIdValid = true  // assume ok if empty (not required)
+
+function setNoIdState(state, msg) {
+    // state: '' | 'ok' | 'warn' | 'error' | 'checking'
+    noIdInput.classList.remove('is-valid','is-invalid')
+    noIdFeedback.className = 'form-text mt-1'
+    noIdFeedback.style.fontSize = '0.78rem'
+    noIdFeedback.textContent = msg || ''
+    if (state === 'ok') {
+        noIdInput.classList.add('is-valid')
+        noIdStatus.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>'
+        noIdFeedback.classList.add('text-success')
+        noIdValid = true
+    } else if (state === 'error') {
+        noIdInput.classList.add('is-invalid')
+        noIdStatus.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>'
+        noIdFeedback.classList.add('text-danger')
+        noIdValid = false
+    } else if (state === 'warn') {
+        noIdStatus.innerHTML = '<i class="bi bi-exclamation-circle-fill text-warning"></i>'
+        noIdFeedback.classList.add('text-warning')
+        noIdValid = false
+    } else if (state === 'checking') {
+        noIdStatus.innerHTML = '<span class="spinner-border spinner-border-sm text-secondary" style="width:.8rem;height:.8rem;"></span>'
+        noIdFeedback.textContent = 'กำลังตรวจสอบ...'
+        noIdFeedback.classList.add('text-muted')
+        noIdValid = false
+    } else {
+        noIdStatus.innerHTML = ''
+        noIdValid = true
+    }
+}
+
+noIdInput.addEventListener('input', function() {
+    const cursor = this.selectionStart
+    const raw    = this.value.replace(/\D/g,'')
+    const fmt    = formatThaiId(this.value)
+    if (this.value !== fmt) this.value = fmt
+
+    clearTimeout(noIdTimer)
+    if (!raw) { setNoIdState('', ''); return }
+
+    if (raw.length < 13) {
+        setNoIdState('', `${raw.length}/13 หลัก`)
+        return
+    }
+
+    // checksum
+    if (!validateThaiIdChecksum(raw)) {
+        setNoIdState('error', 'เลขบัตรไม่ถูกต้อง (checksum ผิด)')
+        return
+    }
+
+    // async unique check
+    setNoIdState('checking')
+    noIdTimer = setTimeout(async () => {
+        try {
+            const res  = await fetch(`/admin/api/resources/Owner/actions/list?perPage=5&filters.no_id=${encodeURIComponent(raw)}`, {
+                credentials: 'include'
+            })
+            const json = await res.json()
+            const records = json.records || []
+            // filter out current record (edit mode)
+            const others = records.filter(r => String(r.id) !== String(recordId))
+            if (others.length > 0) {
+                setNoIdState('error', 'เลขบัตรนี้มีในระบบแล้ว')
+            } else {
+                setNoIdState('ok', 'เลขบัตรถูกต้อง ✓')
+            }
+        } catch {
+            // network error — skip unique check, allow submit
+            setNoIdState('ok', 'เลขบัตรถูกต้อง ✓')
+        }
+    }, 500)
+})
+
+// ── Phone validation ──
+const phoneInput    = document.getElementById('f_phone')
+const phoneFeedback = document.getElementById('phoneFeedback')
+let phoneValid = true
+
+function formatPhone(raw) {
+    const d = raw.replace(/\D/g,'').slice(0,10)
+    if (d.length <= 3) return d
+    if (d.length <= 6) return d.slice(0,3)+'-'+d.slice(3)
+    return d.slice(0,3)+'-'+d.slice(3,6)+'-'+d.slice(6)
+}
+
+phoneInput.addEventListener('input', function() {
+    const raw = this.value.replace(/\D/g,'')
+    this.value = formatPhone(this.value)
+
+    phoneFeedback.className = 'form-text mt-1'
+    phoneFeedback.style.fontSize = '0.78rem'
+    phoneInput.classList.remove('is-valid','is-invalid')
+
+    if (!raw) { phoneFeedback.textContent = ''; phoneValid = true; return }
+
+    if (raw.length < 9) {
+        phoneInput.classList.add('is-invalid')
+        phoneFeedback.classList.add('text-danger')
+        phoneFeedback.textContent = `${raw.length}/9-10 หลัก`
+        phoneValid = false
+    } else {
+        phoneInput.classList.add('is-valid')
+        phoneFeedback.classList.add('text-success')
+        phoneFeedback.textContent = 'เบอร์โทรถูกต้อง ✓'
+        phoneValid = true
+    }
+})
+
+// ══════════════════════════════════════════════
+// FORM SUBMIT
+// ══════════════════════════════════════════════
+document.getElementById('ownerForm').addEventListener('submit', async function(e) {
+    e.preventDefault()
+    const overlay   = document.getElementById('loadingOverlay')
+    const errDiv    = document.getElementById('formError')
+    errDiv.style.display = 'none'
+
+    const fd = new FormData(this)
+    const data = {}
+    fd.forEach((v, k) => { if (v !== '') data[k] = v })
+
+    function showErr(msg) { errDiv.textContent = msg; errDiv.style.display = ''; errDiv.scrollIntoView({ behavior:'smooth', block:'center' }) }
+
+    // validate
+    if (!data.first_name?.trim()) { showErr('กรุณากรอกชื่อ'); return }
+    if (!data.last_name?.trim())  { showErr('กรุณากรอกนามสกุล'); return }
+
+    // เลขบัตร — strip dashes before sending
+    if (data.no_id) {
+        const digits = data.no_id.replace(/\D/g,'')
+        if (digits.length > 0 && digits.length !== 13) {
+            showErr('เลขบัตรประชาชนต้องมี 13 หลัก'); noIdInput.focus(); return
+        }
+        if (digits.length === 13 && !validateThaiIdChecksum(digits)) {
+            showErr('เลขบัตรประชาชนไม่ถูกต้อง'); noIdInput.focus(); return
+        }
+        if (!noIdValid) { showErr('กรุณารอผลการตรวจสอบเลขบัตร หรือแก้ไขให้ถูกต้อง'); noIdInput.focus(); return }
+        data.no_id = digits  // store raw digits
+    }
+
+    // phone
+    if (data.phone) {
+        const ph = data.phone.replace(/\D/g,'')
+        if (ph.length < 9 || ph.length > 10) {
+            showErr('เบอร์โทรต้องมี 9-10 หลัก'); phoneInput.focus(); return
+        }
+        data.phone = ph
+    }
+
+    // convert postcode to int
+    if (data.postcode) data.postcode = parseInt(data.postcode)
+
+    try {
+        overlay.style.display = 'flex'
+        let result
+        if (isEdit) {
+            result = await apiClient.update('Owner', recordId, data)
+        } else {
+            result = await apiClient.create('Owner', data)
+        }
+        overlay.style.display = 'none'
+        window.location.href = '/frontend/pages/owner/list.html'
+    } catch(err) {
+        overlay.style.display = 'none'
+        showErr(err.message || 'เกิดข้อผิดพลาดในการบันทึก')
+    }
+})
+
+// ══════════════════════════════════════════════
+// EDIT MODE — โหลดข้อมูลเดิม
+// ══════════════════════════════════════════════
+async function loadRecord() {
+    if (!isEdit) return
+    try {
+        const result = await apiClient.show('Owner', recordId)
+        const p = result.record?.params || result.record || result
+
+        const setVal = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val }
+        setVal('f_title_owner', p.title_owner)
+        setVal('f_first_name',  p.first_name)
+        setVal('f_last_name',   p.last_name)
+        // format existing no_id with dashes
+        if (p.no_id) {
+            noIdInput.value = formatThaiId(String(p.no_id))
+            noIdInput.dispatchEvent(new Event('input'))
+        }
+        if (p.phone) {
+            phoneInput.value = formatPhone(String(p.phone))
+            phoneInput.dispatchEvent(new Event('input'))
+        }
+        setVal('f_house_no',    p.house_no)
+        setVal('f_road',        p.road)
+        setVal('f_number_no',   p.number_no)
+        setVal('f_org_name',    p.org_name)
+        setVal('f_org_address', p.org_address)
+
+        // owner_type radio
+        if (p.owner_type) {
+            const r = document.querySelector(`input[name="owner_type"][value="${p.owner_type}"]`)
+            if (r) { r.checked = true; r.dispatchEvent(new Event('change')) }
+        }
+
+        // address
+        if (p.subdistrict || p.district || p.province) {
+            setVal('f_subdistrict', p.subdistrict)
+            setVal('f_district',    p.district)
+            setVal('f_province',    p.province)
+            setVal('f_postcode',    p.postcode || p.zipcode || '')
+            setAddrDisplay(p.subdistrict||'', p.district||'', p.province||'', String(p.postcode||p.zipcode||''))
+            addrFilledText.innerHTML = `
+                <span class="addr-tag">ต.${p.subdistrict||'—'}</span>
+                <span class="addr-tag ms-1">อ.${p.district||'—'}</span>
+                <span class="addr-tag ms-1">จ.${p.province||'—'}</span>
+                <span class="addr-tag ms-1">${p.postcode||''}</span>`
+            addrFilledBar.style.display = 'flex'
+        }
+
+        document.getElementById('submitBtnLabel').textContent = 'บันทึกการแก้ไข'
+        updatePreview()
+    } catch(e) {
+        console.error('Load record error:', e)
+    }
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+async function loadComponents() {
+    await Promise.all([
+        loadComponent('../../components/navMenu.html', 'sidebar'),
+        loadComponent('../../components/header.html',  'main-header')
+    ])
+
+    const action = isEdit ? 'แก้ไข' : 'เพิ่ม'
+    document.getElementById('formTitle').textContent    = `${action}เจ้าของกรรมสิทธิ์`
+    document.getElementById('formSubtitle').textContent = isEdit ? 'แก้ไขข้อมูลที่มีอยู่' : 'กรอกข้อมูลเพื่อสร้างเจ้าของกรรมสิทธิ์ใหม่'
+    document.title = `${action}เจ้าของกรรมสิทธิ์ - Backoffice`
+
+    if (window.setBreadcrumb) {
+        setBreadcrumb([
+            { label:'หน้าหลัก', href:'/frontend/pages/dashboard.html' },
+            { label:'เจ้าของกรรมสิทธิ์', href:'/frontend/pages/owner/list.html' },
+            { label:`${action}เจ้าของกรรมสิทธิ์` }
+        ])
+    }
+
+    await loadRecord()
+}
+
+document.addEventListener('DOMContentLoaded', loadComponents)
+</script>
+</body>
+</html>

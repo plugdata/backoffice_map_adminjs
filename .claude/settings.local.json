@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check:*)",
+      "WebFetch(domain:docs.adminjs.co)",
+      "WebFetch(domain:localhost)"
+    ]
+  }
+}

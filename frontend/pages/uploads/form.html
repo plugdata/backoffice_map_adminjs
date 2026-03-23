@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ฟอร์มอัปโหลด - Backoffice</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="../../assets/css/style.css" rel="stylesheet">
+    <link href="../../assets/css/admin.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <div class="d-flex">
+        <nav class="sidebar bg-white border-end" id="sidebar"></nav>
+        <main class="main-content flex-fill">
+            <header id="main-header" class="bg-white border-bottom p-3 sticky-top shadow-sm"></header>
+            <div class="page-content">
+                <div class="page-header">
+                    <h1 class="page-title" id="formTitle">เพิ่มอัปโหลด</h1>
+                    <p class="page-subtitle" id="formSubtitle">กรอกข้อมูลเพื่อสร้างอัปโหลดใหม่</p>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <form id="dataForm" novalidate></form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">กำลังโหลด...</span>
+            </div>
+            <div class="mt-2">กำลังบันทึกข้อมูล...</div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../assets/js/config.js"></script>
+    <script src="../../assets/js/apiClient.js"></script>
+    <script src="../../assets/js/auth.js"></script>
+    <script src="../../assets/js/i18n.js"></script>
+    <script src="../../assets/js/app.js"></script>
+    <script src="../../modules/FormManager.js"></script>
+    <script src="../../modules/CrudManager.js"></script>
+    <script>
+        const RESOURCE_NAME = 'Uploads';
+        if (!authManager.requireAuth()) { }
+        let crudManager;
+        async function loadComponents() {
+            try { await Promise.all([loadComponent('../../components/navMenu.html', 'sidebar'), loadComponent('../../components/header.html', 'main-header')]); initPage(); }
+            catch (error) { console.error('Error loading components:', error); }
+        }
+        async function initPage() {
+            const resourceConfig = RESOURCES[RESOURCE_NAME];
+            const urlParams = new URLSearchParams(window.location.search);
+            const recordId = urlParams.get('id');
+            const isEdit = !!recordId;
+            const action = isEdit ? 'แก้ไข' : 'เพิ่ม';
+            if (document.getElementById('formTitle')) document.getElementById('formTitle').textContent = `${action}${resourceConfig ? resourceConfig.label : 'อัปโหลด'}`;
+            if (document.getElementById('formSubtitle')) document.getElementById('formSubtitle').textContent = isEdit ? 'แก้ไขข้อมูลที่มีอยู่' : `กรอกข้อมูลเพื่อสร้าง${resourceConfig ? resourceConfig.label : 'อัปโหลด'}ใหม่`;
+            document.title = `${action}${resourceConfig ? resourceConfig.label : 'อัปโหลด'} - Backoffice`;
+            const resourcePath = getResourcePath(RESOURCE_NAME);
+            if (window.setBreadcrumb) setBreadcrumb([{ label: 'หน้าหลัก', href: '/frontend/pages/dashboard.html' }, { label: resourceConfig ? resourceConfig.labelPlural : 'อัปโหลด', href: `/frontend/pages/${resourcePath}/list.html` }, { label: `${action}${resourceConfig ? resourceConfig.label : 'อัปโหลด'}` }]);
+            crudManager = new CrudManager(RESOURCE_NAME);
+            await crudManager.init();
+        }
+        document.addEventListener('DOMContentLoaded', loadComponents);
+    </script>
+</body>
+
+</html>

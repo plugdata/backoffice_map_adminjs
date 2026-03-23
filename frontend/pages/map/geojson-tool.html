@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoJSON Tool — Map Viewer</title>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f8f9fa; }
+
+        /* Layout */
+        #app { display: flex; height: 100vh; }
+
+        /* Sidebar */
+        #sidebar {
+            width: 320px;
+            min-width: 320px;
+            background: #fff;
+            border-right: 1px solid #dee2e6;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 10;
+        }
+        #sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+            background: #fff;
+        }
+        #sidebar-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem;
+        }
+
+        /* Map */
+        #map { flex: 1; }
+
+        /* Section */
+        .section-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #3eb39d;
+            margin: 0.75rem 0 0.4rem;
+        }
+
+        /* Layer item */
+        .layer-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+            margin-bottom: 4px;
+            background: #fff;
+            transition: background 0.15s;
+        }
+        .layer-item:hover { background: #f8f9fa; }
+        .layer-color-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .layer-name {
+            flex: 1;
+            font-size: 0.82rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .layer-count {
+            font-size: 0.72rem;
+            color: #6c757d;
+            background: #f0f0f0;
+            padding: 1px 6px;
+            border-radius: 10px;
+        }
+        .layer-remove {
+            background: none; border: none;
+            color: #adb5bd; cursor: pointer;
+            padding: 0 2px; font-size: 0.9rem;
+            transition: color 0.15s;
+        }
+        .layer-remove:hover { color: #dc3545; }
+
+        /* Stats bar */
+        #stats-bar {
+            padding: 0.6rem 0.75rem;
+            border-top: 1px solid #dee2e6;
+            font-size: 0.78rem;
+            color: #6c757d;
+            background: #fafafa;
+        }
+
+        /* Drop zone */
+        #drop-zone {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            color: #adb5bd;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        #drop-zone.dragover {
+            border-color: #3eb39d;
+            background: rgba(62, 179, 157, 0.05);
+            color: #3eb39d;
+        }
+        #drop-zone i { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+
+        /* Toast */
+        #toast-area {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast-msg {
+            background: #212529;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: all 0.25s;
+            max-width: 280px;
+        }
+        .toast-msg.show { opacity: 1; transform: translateY(0); }
+        .toast-msg.success { border-left: 3px solid #3eb39d; }
+        .toast-msg.error { border-left: 3px solid #dc3545; }
+
+        /* Responsive */
+        @media (max-width: 767px) {
+            #sidebar { width: 100%; min-width: unset; height: 45vh; border-right: none; border-bottom: 1px solid #dee2e6; }
+            #app { flex-direction: column; }
+            #map { height: 55vh; }
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+
+    <!-- ===== SIDEBAR ===== -->
+    <div id="sidebar">
+        <div id="sidebar-header">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="bi bi-geo-alt-fill" style="color:#3eb39d;font-size:1.2rem;"></i>
+                <span style="font-weight:700;font-size:1rem;color:#212529;">GeoJSON Tool</span>
+            </div>
+            <div style="font-size:0.75rem;color:#6c757d;">KML Import · GeoJSON Viewer · Leaflet</div>
+        </div>
+
+        <div id="sidebar-body">
+
+            <!-- Load Default -->
+            <div class="section-title">ข้อมูลตัวอย่าง</div>
+            <button id="btn-load-road" class="btn btn-sm w-100 mb-1" style="background:rgba(62,179,157,0.1);color:#3eb39d;border:1px solid rgba(62,179,157,0.3);">
+                <i class="bi bi-signpost-2 me-1"></i>โหลด road.geojson (ถนน)
+            </button>
+
+            <!-- Upload -->
+            <div class="section-title">นำเข้าไฟล์</div>
+            <div id="drop-zone">
+                <i class="bi bi-cloud-upload"></i>
+                ลาก <b>.geojson</b> หรือ <b>.kml</b> วางที่นี่<br>
+                <span style="font-size:0.75rem;">หรือคลิกเพื่อเลือกไฟล์</span>
+            </div>
+            <input id="file-input" type="file" accept=".geojson,.json,.kml" style="display:none" multiple>
+
+            <!-- Layers -->
+            <div class="section-title d-flex justify-content-between align-items-center">
+                <span>Layers</span>
+                <button id="btn-clear-all" class="btn btn-link p-0 text-danger" style="font-size:0.7rem;">ลบทั้งหมด</button>
+            </div>
+            <div id="layer-list">
+                <div style="font-size:0.78rem;color:#adb5bd;padding:0.5rem 0;">ยังไม่มี layer</div>
+            </div>
+
+            <!-- Export -->
+            <div class="section-title">Export</div>
+            <button id="btn-export" class="btn btn-sm btn-outline-secondary w-100" disabled>
+                <i class="bi bi-download me-1"></i>Download GeoJSON รวม
+            </button>
+
+        </div>
+
+        <div id="stats-bar">
+            <span id="stats-text">ยังไม่มีข้อมูล</span>
+        </div>
+    </div>
+
+    <!-- ===== MAP ===== -->
+    <div id="map"></div>
+</div>
+
+<!-- Toast -->
+<div id="toast-area"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- GeoJsonAdapter -->
+<script src="../../modules/GeoJsonAdapter.js"></script>
+
+<script>
+// ============================================================
+// INIT MAP
+// ============================================================
+const map = L.map('map', { zoomControl: true }).setView([13.0, 100.5], 6)
+
+// Base layers
+const baseLayers = {
+    'OpenStreetMap': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors', maxZoom: 19
+    }),
+    'Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '© Esri', maxZoom: 19
+    }),
+    'CartoDB': L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© CartoDB', maxZoom: 19
+    })
+}
+baseLayers['OpenStreetMap'].addTo(map)
+L.control.layers(baseLayers, {}, { position: 'topright', collapsed: false }).addTo(map)
+
+// ============================================================
+// STATE
+// ============================================================
+const adapter = typeof geoJsonAdapter !== 'undefined' ? geoJsonAdapter : new GeoJsonAdapter()
+const layers = []  // [{ id, name, color, layer, stats }]
+const COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#34495e']
+let colorIdx = 0
+
+// ============================================================
+// LAYER MANAGEMENT
+// ============================================================
+function addLayer(name, geoJson) {
+    const color = COLORS[colorIdx % COLORS.length]
+    colorIdx++
+
+    // Override default stroke with assigned color if no stroke in properties
+    const adaptedGeo = {
+        ...geoJson,
+        features: geoJson.features.map(f => ({
+            ...f,
+            properties: {
+                stroke: f.properties?.stroke || color,
+                ...f.properties
+            }
+        }))
+    }
+
+    const leafletLayer = adapter.renderToLeaflet(map, adaptedGeo, {
+        fitBounds: layers.length === 0  // fitBounds เฉพาะ layer แรก
+    })
+
+    const stats = adapter.stats(geoJson)
+    const id = Date.now()
+    layers.push({ id, name, color, layer: leafletLayer, geoJson, stats })
+
+    renderLayerList()
+    updateStats()
+    return leafletLayer
+}
+
+function removeLayer(id) {
+    const idx = layers.findIndex(l => l.id === id)
+    if (idx === -1) return
+    map.removeLayer(layers[idx].layer)
+    layers.splice(idx, 1)
+    renderLayerList()
+    updateStats()
+}
+
+function clearAllLayers() {
+    layers.forEach(l => map.removeLayer(l.layer))
+    layers.length = 0
+    colorIdx = 0
+    renderLayerList()
+    updateStats()
+}
+
+function renderLayerList() {
+    const el = document.getElementById('layer-list')
+    if (layers.length === 0) {
+        el.innerHTML = '<div style="font-size:0.78rem;color:#adb5bd;padding:0.5rem 0;">ยังไม่มี layer</div>'
+        document.getElementById('btn-export').disabled = true
+        return
+    }
+    document.getElementById('btn-export').disabled = false
+
+    el.innerHTML = layers.map(l => {
+        const typesStr = Object.entries(l.stats.types)
+            .map(([t, c]) => `${t}×${c}`).join(' ')
+        return `
+        <div class="layer-item">
+            <div class="layer-color-dot" style="background:${l.color}"></div>
+            <span class="layer-name" title="${l.name}">${l.name}</span>
+            <span class="layer-count">${l.stats.count}</span>
+            <span style="font-size:0.65rem;color:#adb5bd;margin-left:2px">${typesStr}</span>
+            <button class="layer-remove" onclick="removeLayer(${l.id})" title="ลบ layer">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>`
+    }).join('')
+}
+
+function updateStats() {
+    const el = document.getElementById('stats-text')
+    if (layers.length === 0) {
+        el.textContent = 'ยังไม่มีข้อมูล'
+        return
+    }
+    const total = layers.reduce((s, l) => s + l.stats.count, 0)
+    const allTypes = {}
+    layers.forEach(l => Object.entries(l.stats.types).forEach(([t, c]) => {
+        allTypes[t] = (allTypes[t] || 0) + c
+    }))
+    const typeStr = Object.entries(allTypes).map(([t, c]) => `${t}: ${c}`).join(' · ')
+    el.textContent = `${layers.length} layers · ${total} features · ${typeStr}`
+}
+
+// ============================================================
+// LOAD road.geojson
+// ============================================================
+document.getElementById('btn-load-road').addEventListener('click', async () => {
+    try {
+        showToast('กำลังโหลด road.geojson...', 'info')
+        const geo = await adapter.loadFromUrl('/mrokupdata/road.geojson')
+        addLayer('road.geojson', geo)
+        showToast(`โหลดสำเร็จ ${geo.features.length} features`, 'success')
+    } catch (e) {
+        showToast('โหลดไม่ได้: ' + e.message, 'error')
+    }
+})
+
+// ============================================================
+// FILE UPLOAD (drag-drop + click)
+// ============================================================
+const dropZone = document.getElementById('drop-zone')
+const fileInput = document.getElementById('file-input')
+
+dropZone.addEventListener('click', () => fileInput.click())
+
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault()
+    dropZone.classList.add('dragover')
+})
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'))
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault()
+    dropZone.classList.remove('dragover')
+    handleFiles(e.dataTransfer.files)
+})
+
+fileInput.addEventListener('change', (e) => handleFiles(e.target.files))
+
+async function handleFiles(files) {
+    for (const file of files) {
+        const name = file.name
+        try {
+            let geoJson
+            if (name.endsWith('.kml')) {
+                showToast(`แปลง KML: ${name}`, 'info')
+                geoJson = await adapter.loadKmlFromFile(file)
+                showToast(`แปลง KML สำเร็จ ${geoJson.features.length} features`, 'success')
+            } else {
+                geoJson = await adapter.loadFromFile(file)
+                showToast(`โหลด ${name}: ${geoJson.features.length} features`, 'success')
+            }
+
+            if (!adapter.validate(geoJson)) {
+                showToast(`${name}: ไม่มี features ใน GeoJSON`, 'error')
+                continue
+            }
+            addLayer(name, geoJson)
+        } catch (e) {
+            showToast(`${name}: ${e.message}`, 'error')
+        }
+    }
+    fileInput.value = ''
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+document.getElementById('btn-export').addEventListener('click', () => {
+    if (!layers.length) return
+    const combined = {
+        type: 'FeatureCollection',
+        features: layers.flatMap(l => l.geoJson.features)
+    }
+    adapter.downloadGeoJSON(combined, 'export.geojson')
+    showToast('Download เริ่มต้นแล้ว', 'success')
+})
+
+document.getElementById('btn-clear-all').addEventListener('click', () => {
+    if (layers.length === 0) return
+    if (confirm(`ลบ ${layers.length} layers ทั้งหมด?`)) clearAllLayers()
+})
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, type = 'info') {
+    const area = document.getElementById('toast-area')
+    const el = document.createElement('div')
+    el.className = `toast-msg ${type}`
+    el.textContent = msg
+    area.appendChild(el)
+    requestAnimationFrame(() => { requestAnimationFrame(() => el.classList.add('show')) })
+    setTimeout(() => {
+        el.classList.remove('show')
+        setTimeout(() => el.remove(), 300)
+    }, 2800)
+}
+</script>
+</body>
+</html>
