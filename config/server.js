@@ -19,14 +19,16 @@ const __dirname = path.dirname(__filename)
 
 export const createExpressApp = () => {
   const app = express()
-  
+
   // Middleware
-  app.use(express.json())
+  app.use(express.json({ limit: '50mb' }))
+  app.use(express.urlencoded({ extended: true, limit: '50mb' }))
   app.use(cookieParser())
-  
+
   // Session middleware
   app.use(session({
-    secret: process.env.SESSION_SECRET || 'adminjs-secret-key',
+    name: 'adminjs', // Match AdminJS cookie name
+    secret: process.env.ADMIN_COOKIE_SECRET || process.env.SESSION_SECRET || 'adminjs-secret-key',
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -34,7 +36,7 @@ export const createExpressApp = () => {
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     }
   }))
-  
+
   return app
 }
 

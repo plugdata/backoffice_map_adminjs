@@ -41,6 +41,7 @@
     }
   },
   "labels": {
+    "BuildPlan": "อาคารทรงคุณค่า",
     "BuildingControl": "งานควบคุมอาคาร",
     "Confirm": "ยืนยันการลบ",
     "ConstructionProject": "อัพโหลดไฟล์โครงการก่อสร้าง",
@@ -65,7 +66,8 @@
     "PlanProject": "แผนโครงการ",
     "ApprovedProject": "โครงการที่อนุมัติ",
     "Map": "แผนที่",
-    "loginWelcome": "ยินดีต้อนรับสู่ระบบ"
+    "loginWelcome": "ยินดีต้อนรับสู่ระบบ",
+    "PlanBuild": "อาคารทรงคุณค่า"
   },
   "messages": {
     "loginWelcome": "ยินดีต้อนรับสู่ระบบ",
@@ -170,7 +172,7 @@
     "budget": "งบประมาณ",
     "documentCount": "จำนวนเอกสาร",
     "details": "รายละเอียด",
-    "owner_type": "ประเภทเจ้าของ"
-
+    "owner_type": "ประเภทเจ้าของ",
+    "areabuild": "ชื่ออาคารทรงคุณค่า"
   }  
 }

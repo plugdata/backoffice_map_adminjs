@@ -1,6 +1,6 @@
 import express from 'express'
 import { createPrismaClient } from '../config/database.js'
-import { getProvinces} from '../page/owner/joinString.js'
+import { getProvinces} from '../api/owner/joinString.js'
 const router = express.Router()
 const prisma = createPrismaClient()
 

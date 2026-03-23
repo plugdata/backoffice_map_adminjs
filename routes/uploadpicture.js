@@ -28,7 +28,7 @@ const storage = multer.diskStorage({
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
     const ext = path.extname(file.originalname)
     const name = path.basename(file.originalname, ext)
-    
+
     // Support Thai filenames by preserving original name with unique suffix
     const safeName = name.replace(/[^a-zA-Z0-9\u0E00-\u0E7F\s-]/g, '')
     cb(null, `${safeName}-${uniqueSuffix}${ext}`)
@@ -106,13 +106,24 @@ router.post('/', upload.single('file'), async (req, res) => {
     const imageUrl = `${baseUrl}/uploads/images/${filename}`
 
     res.json({
-      url: imageUrl,
-      filename: filename,
-      type: type || 'image'
+      success: true,
+      data: {
+        url: imageUrl,
+        filename: filename,
+        type: type || 'image'
+      }
     })
   } catch (error) {
     console.error('Image upload error:', error)
-    
+
+    // Handle Multer errors
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: 'ขนาดไฟล์เกิน 5MB' })
+    }
+    if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({ error: `ฟิลด์ไฟล์ไม่ถูกต้อง: ${error.field || 'unknown'}` })
+    }
+
     // Clean up uploaded file if error occurs
     if (req.file) {
       try {
@@ -121,8 +132,8 @@ router.post('/', upload.single('file'), async (req, res) => {
         console.error('Error deleting uploaded file:', unlinkError)
       }
     }
-    
-    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ' })
+
+    res.status(500).json({ error: error.message || 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ' })
   }
 })
 
@@ -167,7 +178,7 @@ router.get('/', async (req, res) => {
       const filePath = path.join(uploadsDir, filename)
       const stats = fs.statSync(filePath)
       const baseUrl = `${req.protocol}://${req.get('host')}`
-      
+
       return {
         id: filename,
         filename: filename,

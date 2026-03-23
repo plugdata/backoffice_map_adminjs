@@ -37,3 +37,5 @@ import MapRiskZone from '../src/components/mapRiskZone'
 AdminJS.UserComponents.MapRiskZone = MapRiskZone
 import MapZoningPlan from '../src/components/mapZoningPlan'
 AdminJS.UserComponents.MapZoningPlan = MapZoningPlan
+import MapPlanBuild from '../src/components/mapPlanBuild'
+AdminJS.UserComponents.MapPlanBuild = MapPlanBuild

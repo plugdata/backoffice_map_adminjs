@@ -30,6 +30,7 @@ model User {
   owners            Owner[]
   planProjects      PlanProject[]    
   approvedProjects  ApprovedProject[] 
+  buildPlans        BuildPlan[]
 }
 
 model Owner {
@@ -65,15 +66,15 @@ model BuildingControl {
   building_type  String?
   use_purpose    String?
   quantity       Int?
-  fiscalYearId   Int
+  fiscalYearId   Int?
   owner_id       Int?
   status         String?
   license_number String?
   date           DateTime?
   maps           Map?
   uploads        Uploads[] @relation("BuildingControlUploads")
- created_at     DateTime   @default(now())
- updated_at     DateTime   @updatedAt
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
   @@index([fiscalYearId])
   @@index([owner_id])
 }
@@ -81,15 +82,16 @@ model BuildingControl {
 model RiskZone {
   id           Int        @id @default(autoincrement())
   zoneType     String
+  zone_code    String?
   description  String?
-  fiscalYearId Int
+  fiscalYearId Int?
   status       String?
-  owner_id     Int
+  owner_id     Int?
   createdAt    DateTime   @default(now())
   maps         Map?
   uploads      Uploads[]  @relation("RiskZoneUploads")
-  created_at     DateTime   @default(now())
-  updated_at     DateTime   @updatedAt
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
   @@index([fiscalYearId])
   @@index([owner_id])
 }
@@ -98,14 +100,14 @@ model ZoningPlan {
   id           Int        @id @default(autoincrement())
   areaName     String
   notes        String?
-  fiscalYearId Int
+  fiscalYearId Int?
   status       String?
-  owner_id     Int
+  owner_id     Int?
   createdAt    DateTime   @default(now())
   maps         Map?
   uploads      Uploads[]  @relation("ZoningPlanUploads")
- created_at     DateTime   @default(now())
- updated_at     DateTime   @updatedAt
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
   @@index([fiscalYearId])
   @@index([owner_id])
 }
@@ -167,11 +169,14 @@ model Uploads {
   buildingControlId Int?
   riskZoneId        Int?
   zoningPlanId      Int?
+  mapId             Int?
+  mapDirect         Map?              @relation("MapDirectUploads", fields: [mapId], references: [id])
   buildingControls  BuildingControl[] @relation("BuildingControlUploads")
   riskZones         RiskZone[]        @relation("RiskZoneUploads")
   zoningPlans       ZoningPlan[]      @relation("ZoningPlanUploads")
   planProjects      PlanProject[]     @relation("PlanProjectUploads")
   approvedProjects  ApprovedProject[] @relation("ApprovedProjectUploads")
+  buildPlans        BuildPlan[]       @relation("BuildPlanUploads")
   maps              Map[]             @relation("MapUploads")
 }
 
@@ -182,6 +187,7 @@ model Map {
   zoningPlanId      Int?             @unique
   planProjectId     Int?             @unique        // ✅ เพิ่ม
   approvedProjectId Int?             @unique        // ✅ เพิ่ม
+  palnbuildId Int?                   @unique        // ✅ เพิ่ม
   name_local        String?
   house_no          String?
   address           String?
@@ -198,6 +204,8 @@ model Map {
   zoningPlan        ZoningPlan?      @relation(fields: [zoningPlanId], references: [id])
   planProject       PlanProject?     @relation(fields: [planProjectId], references: [id])
   approvedProject   ApprovedProject? @relation(fields: [approvedProjectId], references: [id])
+  buildpaln         BuildPlan?       @relation(fields: [palnbuildId], references: [id])
+  directUploads     Uploads[]        @relation("MapDirectUploads")
   maps              Uploads[]        @relation("MapUploads")
   @@index([buildingControlId])
   @@index([riskZoneId])
@@ -217,3 +225,17 @@ model districts {
   amphoe_code    String
 }
 
+model BuildPlan {
+  id           Int        @id @default(autoincrement())
+  areabuild    String
+  notes        String?
+  user_id      Int?
+  user         User?      @relation(fields: [user_id], references: [id])
+
+  // เพิ่มคีย์เชื่อมกับ Map
+  maps         Map?
+  uploads      Uploads[]  @relation("BuildPlanUploads")
+
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
+}

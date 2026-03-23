@@ -1,6 +1,6 @@
 /* 
 import express from 'express'
-import { prisma } from '../page/buildingControl/helpers.js'
+import { prisma } from '../api/buildingControl/helpers.js'
 
 const router = express.Router()
 
@@ -470,7 +470,7 @@ router.delete('/cleanup', async (req, res) => {
 export default router
  */
 import express from 'express'
-import { prisma } from '../page/buildingControl/helpers.js'
+import { prisma } from '../api/buildingControl/helpers.js'
 
 const router = express.Router()
 

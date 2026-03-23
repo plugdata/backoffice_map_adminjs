@@ -4,10 +4,10 @@
 // ========================================
 
 import express from 'express'
-import { 
-  authenticateUser, 
-  authenticateToken, 
-  requirePermission, 
+import {
+  authenticateUser,
+  authenticateToken,
+  requirePermission,
   requireSuperAdmin,
   createUser,
   updateUser,
@@ -131,8 +131,15 @@ router.post('/login', async (req, res) => {
  */
 router.post('/logout', authenticateToken, (req, res) => {
   try {
-    // ในระบบ JWT ไม่จำเป็นต้องทำอะไรเพิ่มเติม
-    // Client จะต้องลบ token ออกจาก localStorage
+    // ลบ session ถ้ามี
+    if (req.session) {
+      req.session.destroy((err) => {
+        if (err) console.error('Session destroy error:', err)
+      })
+    }
+    // ลบ cookie AdminJS
+    res.clearCookie('adminjs')
+
     res.json({
       success: true,
       message: 'ออกจากระบบสำเร็จ'
@@ -153,7 +160,7 @@ router.post('/logout', authenticateToken, (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const userRolesAndPermissions = await getUserRolesAndPermissions(req.user.userId)
-    
+
     if (!userRolesAndPermissions) {
       return res.status(404).json({
         success: false,
@@ -199,7 +206,7 @@ router.post('/change-password', authenticateToken, async (req, res) => {
     }
 
     const result = await changePassword(req.user.userId, currentPassword, newPassword)
-    
+
     if (!result.success) {
       return res.status(400).json(result)
     }

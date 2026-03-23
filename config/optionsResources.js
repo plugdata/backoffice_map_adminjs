@@ -1,9 +1,13 @@
+// ========================================
+// AdminJS Options - Backend API Only
+// ปิด CSS/UI components ทั้งหมด
+// ========================================
+
 import i18next from 'i18next'
 import Backend from 'i18next-fs-backend'
 import fs from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url' 
-import { componentLoader } from './loder.js'
+import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -41,9 +45,7 @@ await i18n
 
 const language = i18next.language || 'th'
 
-// Use built-in AdminJS themes (light/dark). Remove custom theme to avoid missing CSS.
-
-// AdminJS options
+// AdminJS options - API Mode (ไม่มี CSS/UI)
 const options = {
   locale: {
     language,
@@ -54,20 +56,10 @@ const options = {
     }
   },
   branding: {
-    companyName: 'แดชบอร์ดผู้ดูแลระบบ',
-    logo: '',
-  },
-  defaultTheme: 'light',
-  componentLoader: componentLoader,
-
-  assets: {
-    styles: [
-      '/public/css/admin-custom.css', // Fixed typo in path
-      '/public/css/test.css',
-      'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', // Leaflet CSS
-    ] 
+    companyName: 'Building API',
+    logo: false,
   },
 }
 
-export { i18next, language, componentLoader }
+export { i18next, language }
 export default options

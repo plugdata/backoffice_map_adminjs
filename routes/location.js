@@ -152,10 +152,10 @@ router.get('/', async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit)
     const currentYear = getCurrentYear()
     const currentYearBE = adToBE(currentYear)
-    
+
     // Build where clause
     const where = {}
-    
+
     // Type filter
     if (type === 'buildingControl') {
       where.buildingControlId = { not: null }
@@ -167,7 +167,7 @@ router.get('/', async (req, res) => {
         { zoningPlanId: { not: null } }
       ]
     }
-    
+
     // Year filter
     if (year) {
       const yearInt = parseInt(year)
@@ -177,14 +177,14 @@ router.get('/', async (req, res) => {
         select: { id: true }
       })
       const fiscalYearIds = fiscalYears.map(fy => fy.id)
-      
+
       where.OR = [
         ...(where.OR || []),
         { buildingControl: { fiscalYearId: { in: fiscalYearIds } } },
         { zoningPlan: { fiscalYear: { year: yearInt } } }
       ]
     }
-    
+
     // Search filter
     if (search) {
       where.OR = [
@@ -220,24 +220,24 @@ router.get('/', async (req, res) => {
     const buildingControlIds = locations
       .filter(loc => loc.buildingControl)
       .map(loc => loc.buildingControl.fiscalYearId)
-    
+
     const fiscalYears = await prisma.fiscalYear.findMany({
       where: { id: { in: buildingControlIds } }
     })
-    
+
     const fiscalYearMap = new Map(fiscalYears.map(fy => [fy.id, fy.year]))
 
     // Transform data
     const transformedLocations = locations.map(location => {
       const relatedData = location.buildingControl || location.zoningPlan
       let fiscalYear = currentYear
-      
+
       if (location.zoningPlan?.fiscalYear?.year) {
         fiscalYear = location.zoningPlan.fiscalYear.year
       } else if (location.buildingControl?.fiscalYearId) {
         fiscalYear = fiscalYearMap.get(location.buildingControl.fiscalYearId) || currentYear
       }
-      
+
       return {
         id: location.id,
         name: location.name_local || 'ไม่ระบุชื่อ',
@@ -318,13 +318,13 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params
     const currentYear = getCurrentYear()
     const currentYearBE = adToBE(currentYear)
-    
+
     // Validate ID
     const locationId = parseInt(id)
     if (isNaN(locationId)) {
       return res.status(400).json({ error: 'ID ต้องเป็นตัวเลข' })
     }
-    
+
     const location = await prisma.map.findUnique({
       where: { id: locationId },
       include: {
@@ -343,7 +343,7 @@ router.get('/:id', async (req, res) => {
 
     const relatedData = location.buildingControl || location.zoningPlan
     let fiscalYear = currentYear
-    
+
     // Get fiscal year from related data
     if (location.zoningPlan?.fiscalYear?.year) {
       fiscalYear = location.zoningPlan.fiscalYear.year
@@ -356,21 +356,21 @@ router.get('/:id', async (req, res) => {
         fiscalYear = fiscalYearData.year
       }
     }
-    
+
     const transformedLocation = {
-        id: location.id,
-        name: location.name_local || 'ไม่ระบุชื่อ',
-        address: `${location.house_no || ''} ${location.road || ''} ตำบล${location.subdistrict || ''} อำเภอ${location.district || ''} จังหวัด${location.province || ''} ${location.postcode || ''}`.trim(),
-        coordinates: [location.latitude || 0, location.longitude || 0],
+      id: location.id,
+      name: location.name_local || 'ไม่ระบุชื่อ',
+      address: `${location.house_no || ''} ${location.road || ''} ตำบล${location.subdistrict || ''} อำเภอ${location.district || ''} จังหวัด${location.province || ''} ${location.postcode || ''}`.trim(),
+      coordinates: [location.latitude || 0, location.longitude || 0],
       type: location.buildingControl ? 'buildingControl' : 'zoningPlan',
-        description: relatedData?.description || location.name_local || '',
+      description: relatedData?.description || location.name_local || '',
       year: fiscalYear,
       yearBE: adToBE(fiscalYear),
       currentYear: currentYear,
       currentYearBE: currentYearBE,
-        createdAt: location.created_at,
-        updatedAt: location.updated_at
-      }
+      createdAt: location.created_at,
+      updatedAt: location.updated_at
+    }
 
     res.json({
       success: true,
@@ -453,18 +453,18 @@ router.get('/:id', async (req, res) => {
  */
 router.get('/search', async (req, res) => {
   try {
-    const { 
-      q, type = 'all', year, province, district, subdistrict, 
-      page = 1, limit = 10 
+    const {
+      q, type = 'all', year, province, district, subdistrict,
+      page = 1, limit = 10
     } = req.query
-    
+
     const skip = (parseInt(page) - 1) * parseInt(limit)
     const currentYear = getCurrentYear()
     const currentYearBE = adToBE(currentYear)
-    
+
     // Build where clause for search
     const where = {}
-    
+
     // Text search
     if (q) {
       where.OR = [
@@ -475,7 +475,7 @@ router.get('/search', async (req, res) => {
         { province: { contains: q, mode: 'insensitive' } }
       ]
     }
-    
+
     // Type filter
     if (type === 'buildingControl') {
       where.buildingControlId = { not: null }
@@ -488,12 +488,12 @@ router.get('/search', async (req, res) => {
         { zoningPlanId: { not: null } }
       ]
     }
-    
+
     // Location filters
     if (province) where.province = { contains: province, mode: 'insensitive' }
     if (district) where.district = { contains: district, mode: 'insensitive' }
     if (subdistrict) where.subdistrict = { contains: subdistrict, mode: 'insensitive' }
-    
+
     // Year filter (from related data)
     if (year) {
       const yearInt = parseInt(year)
@@ -503,7 +503,7 @@ router.get('/search', async (req, res) => {
         select: { id: true }
       })
       const fiscalYearIds = fiscalYears.map(fy => fy.id)
-      
+
       where.OR = [
         ...(where.OR || []),
         { buildingControl: { fiscalYearId: { in: fiscalYearIds } } },
@@ -534,24 +534,24 @@ router.get('/search', async (req, res) => {
     const buildingControlIds = locations
       .filter(loc => loc.buildingControl)
       .map(loc => loc.buildingControl.fiscalYearId)
-    
+
     const fiscalYears = await prisma.fiscalYear.findMany({
       where: { id: { in: buildingControlIds } }
     })
-    
+
     const fiscalYearMap = new Map(fiscalYears.map(fy => [fy.id, fy.year]))
 
     // Transform data to match the required format
     const transformedLocations = locations.map(location => {
       const relatedData = location.buildingControl || location.zoningPlan
       let fiscalYear = currentYear
-      
+
       if (location.zoningPlan?.fiscalYear?.year) {
         fiscalYear = location.zoningPlan.fiscalYear.year
       } else if (location.buildingControl?.fiscalYearId) {
         fiscalYear = fiscalYearMap.get(location.buildingControl.fiscalYearId) || currentYear
       }
-      
+
       return {
         id: location.id,
         name: location.name_local || 'ไม่ระบุชื่อ',
@@ -647,7 +647,7 @@ router.get('/stats', async (req, res) => {
   try {
     const currentYear = getCurrentYear()
     const currentYearBE = adToBE(currentYear)
-    
+
     // Get counts
     const [totalLocations, buildingControlCount, zoningPlanCount] = await Promise.all([
       prisma.map.count({
@@ -661,7 +661,7 @@ router.get('/stats', async (req, res) => {
       prisma.map.count({ where: { buildingControlId: { not: null } } }),
       prisma.map.count({ where: { zoningPlanId: { not: null } } })
     ])
-    
+
     // Get year statistics
     const yearStats = await prisma.fiscalYear.findMany({
       select: {
@@ -674,7 +674,7 @@ router.get('/stats', async (req, res) => {
       },
       orderBy: { year: 'desc' }
     })
-    
+
     // Get building control counts by fiscal year
     const buildingControlStats = await prisma.buildingControl.groupBy({
       by: ['fiscalYearId'],
@@ -682,34 +682,34 @@ router.get('/stats', async (req, res) => {
         id: true
       }
     })
-    
+
     // Get fiscal years for building controls
     const buildingControlFiscalYears = await prisma.fiscalYear.findMany({
       where: { id: { in: buildingControlStats.map(stat => stat.fiscalYearId) } }
     })
-    
+
     const buildingControlYearMap = new Map(
       buildingControlStats.map(stat => [
-        stat.fiscalYearId, 
+        stat.fiscalYearId,
         stat._count.id
       ])
     )
-    
+
     const fiscalYearMap = new Map(
       buildingControlFiscalYears.map(fy => [fy.id, fy.year])
     )
-    
+
     // Combine year statistics
     const allYears = new Set()
     yearStats.forEach(stat => allYears.add(stat.year))
     buildingControlFiscalYears.forEach(fy => allYears.add(fy.year))
-    
+
     const yearStatsFormatted = Array.from(allYears).map(year => {
       const zoningPlanCount = yearStats.find(stat => stat.year === year)?._count?.zoningPlan || 0
       const buildingControlCount = buildingControlFiscalYears
         .filter(fy => fy.year === year)
         .reduce((sum, fy) => sum + (buildingControlYearMap.get(fy.id) || 0), 0)
-      
+
       return {
         year,
         yearBE: adToBE(year),
@@ -772,7 +772,7 @@ router.get('/years', async (req, res) => {
   try {
     const currentYear = getCurrentYear()
     const currentYearBE = adToBE(currentYear)
-    
+
     // Get years with data
     const [zoningPlanYears, buildingControlYears] = await Promise.all([
       prisma.fiscalYear.findMany({
@@ -787,7 +787,7 @@ router.get('/years', async (req, res) => {
             }
           }
         },
-      orderBy: { year: 'desc' }
+        orderBy: { year: 'desc' }
       }),
       prisma.buildingControl.groupBy({
         by: ['fiscalYearId'],
@@ -796,30 +796,30 @@ router.get('/years', async (req, res) => {
         }
       })
     ])
-    
+
     // Get fiscal years for building controls
     const buildingControlFiscalYears = await prisma.fiscalYear.findMany({
       where: { id: { in: buildingControlYears.map(stat => stat.fiscalYearId) } }
     })
-    
+
     const buildingControlYearMap = new Map(
       buildingControlYears.map(stat => [
-        stat.fiscalYearId, 
+        stat.fiscalYearId,
         stat._count.id
       ])
     )
-    
+
     // Combine years
     const allYears = new Set()
     zoningPlanYears.forEach(stat => allYears.add(stat.year))
     buildingControlFiscalYears.forEach(fy => allYears.add(fy.year))
-    
+
     const yearsFormatted = Array.from(allYears).map(year => {
       const zoningPlanCount = zoningPlanYears.find(stat => stat.year === year)?._count?.zoningPlan || 0
       const buildingControlCount = buildingControlFiscalYears
         .filter(fy => fy.year === year)
         .reduce((sum, fy) => sum + (buildingControlYearMap.get(fy.id) || 0), 0)
-      
+
       return {
         year,
         yearBE: adToBE(year),

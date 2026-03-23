@@ -1,6 +1,6 @@
 import express from 'express'
 import { createPrismaClient } from '../config/database.js'
-import { getProvinces, getAmphoes, getDistricts} from '../page/owner/joinString.js'
+import { getProvinces, getAmphoes, getDistricts} from '../api/owner/joinString.js'
 const router = express.Router()
 const prisma = createPrismaClient()
 
@@ -36,5 +36,32 @@ router.get('/districts/:amphoeCode', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch all address' })
   }
 }) */
+
+// ✅ ค้นหาที่อยู่แบบ full-text (ตำบล/อำเภอ/จังหวัด/รหัสไปรษณีย์)
+router.get('/search', async (req, res) => {
+  try {
+    const { q } = req.query
+    if (!q || String(q).trim().length < 1) return res.json([])
+    const keyword = String(q).trim()
+
+    const rows = await prisma.districts.findMany({
+      where: {
+        OR: [
+          { district: { contains: keyword, mode: 'insensitive' } },
+          { amphoe:   { contains: keyword, mode: 'insensitive' } },
+          { province: { contains: keyword, mode: 'insensitive' } },
+          { zipcode:  { contains: keyword } }
+        ]
+      },
+      orderBy: [{ province_code: 'asc' }, { amphoe_code: 'asc' }],
+      take: 30
+    })
+
+    res.json(rows)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Search failed' })
+  }
+})
 
 export default router
