@@ -217,89 +217,157 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     /* ════════════════════════════════════════
-       MOCK DATA
+       DATA  (filled from API)
     ════════════════════════════════════════ */
-    const LOCATIONS = [
-      {
-        id: 1,
-        name: 'โครงการก่อสร้างถนนซอยวิภาวดี',
-        type: 'งานสาธารณะ', year: '2567', distance: 0.8,
-        address: '12 ถนนวิภาวดีรังสิต เมืองตรัง',
-        desc: 'ก่อสร้างและขยายผิวจราจร 480 ม. พร้อมติดตั้งไฟฟ้าแสงสว่างและป้ายจราจร',
-        image: 'https://picsum.photos/seed/road1/380/160',
-        images: [
-          'https://picsum.photos/seed/road1/380/160',
-          'https://picsum.photos/seed/road1b/380/160',
-          'https://picsum.photos/seed/road1c/380/160'
-        ],
-        rating: 4.5, phone: '075-218-500', hours: 'จ–ศ 08:30–16:30',
-        programs: ['ก่อสร้าง', 'ไฟฟ้าสาธารณะ'],
-        docUrl: '#', lat: 7.5590, lng: 99.6115
-      },
-      {
-        id: 2,
-        name: 'ขออนุญาตก่อสร้างอาคารพาณิชย์',
-        type: 'ใบอนุญาต', year: '2567', distance: 1.2,
-        address: '88/4 ถนนกันตัง ทับเที่ยง ตรัง',
-        desc: 'ออกใบอนุญาตก่อสร้างอาคารพาณิชย์ประเภท ก. สำหรับผู้ประกอบการในเขตเทศบาล',
-        image: 'https://picsum.photos/seed/permit2/380/160',
-        images: [
-          'https://picsum.photos/seed/permit2/380/160',
-          'https://picsum.photos/seed/permit2b/380/160'
-        ],
-        rating: 4.2, phone: '075-218-555', hours: 'จ–ศ 08:30–16:30',
-        programs: ['ใบอนุญาต', 'อาคารพาณิชย์'],
-        docUrl: '#', lat: 7.5565, lng: 99.6140
-      },
-      {
-        id: 3,
-        name: 'ผังเมืองรวมนครตรัง ระยะ 5 ปี',
-        type: 'งานผังเมือง', year: '2566', distance: 2.0,
-        address: 'สำนักงานเทศบาลนครตรัง ถนนพระราม 6',
-        desc: 'แผนผังเมืองรวมฉบับปรับปรุงครั้งที่ 3 ครอบคลุม 17 ชุมชน กำหนดโซนที่อยู่อาศัย/พาณิชย์',
-        image: 'https://picsum.photos/seed/plan3/380/160',
-        images: [
-          'https://picsum.photos/seed/plan3/380/160',
-          'https://picsum.photos/seed/plan3b/380/160',
-          'https://picsum.photos/seed/plan3c/380/160',
-          'https://picsum.photos/seed/plan3d/380/160'
-        ],
-        rating: 4.7, phone: '075-218-600', hours: 'จ–ศ 08:30–16:30',
-        programs: ['ผังเมือง', 'วางแผนชุมชน'],
-        docUrl: '#', lat: 7.5545, lng: 99.6095
-      },
-      {
-        id: 4,
-        name: 'ปรับปรุงระบบระบายน้ำชุมชนนาพละ',
-        type: 'งานสาธารณะ', year: '2566', distance: 3.4,
-        address: 'ชุมชนนาพละ ถนนห้วยยอด เมืองตรัง',
-        desc: 'วางท่อระบายน้ำขนาดใหญ่แก้ปัญหาน้ำท่วมขังช่วงฤดูฝน ระยะทาง 1.2 กม.',
-        image: 'https://picsum.photos/seed/drain4/380/160',
-        images: [
-          'https://picsum.photos/seed/drain4/380/160',
-          'https://picsum.photos/seed/drain4b/380/160',
-          'https://picsum.photos/seed/drain4c/380/160'
-        ],
-        rating: 3.9, phone: '075-218-511', hours: 'จ–ศ 08:30–16:30',
-        programs: ['ระบายน้ำ', 'ป้องกันน้ำท่วม'],
-        docUrl: '', lat: 7.5520, lng: 99.6070
-      },
-      {
-        id: 5,
-        name: 'ขออนุญาตรื้อถอนอาคารเก่า',
-        type: 'ใบอนุญาต', year: '2565', distance: 1.7,
-        address: '22 ซอยสุขุมวิท 101 เมืองตรัง',
-        desc: 'ออกหนังสืออนุญาตรื้อถอนอาคารตาม พ.ร.บ.ควบคุมอาคาร สามารถยื่นออนไลน์ได้',
-        image: 'https://picsum.photos/seed/demo5/380/160',
-        images: [
-          'https://picsum.photos/seed/demo5/380/160',
-          'https://picsum.photos/seed/demo5b/380/160'
-        ],
-        rating: 4.1, phone: '075-218-560', hours: 'จ–ศ 08:30–16:30',
-        programs: ['ใบอนุญาต', 'รื้อถอน'],
-        docUrl: '#', lat: 7.5575, lng: 99.6160
+    let LOCATIONS = []          // buildingControl markers (for map pins)
+    let ALL_ITEMS = []          // markers + all KML items (for search/cards)
+    let apiLayersData = {}      // raw layer data from API
+    const kmlLayerRefs = {}     // mapId → L.geoJSON layer (for flyTo KML)
+
+    const TYPE_COLOR = {
+      buildingControl: '#ec407a',
+      riskZone:        '#0284c7',
+      zoningPlan:      '#ec407a',
+      planProject:     '#16a34a',
+      approvedProject: '#ca8a04',
+      buildPlan:       '#ad1457'
+    }
+
+    function isImageUrl(u) {
+      if (!u) return false
+      const ft = (u.fileType || '').toLowerCase()
+      const nm = (u.namefile || u.url || '').toLowerCase()
+      return ft.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)(\?|$)/.test(nm)
+    }
+
+    // map API item → card/loc format
+    function apiItemToLoc(m) {
+      const typeMap = {
+        buildingControl: 'ใบอนุญาต',
+        riskZone:        'งานสาธารณะ',
+        zoningPlan:      'งานผังเมือง',
+        planProject:     'งานสาธารณะ',
+        approvedProject: 'งานสาธารณะ',
+        buildPlan:       'งานสาธารณะ'
       }
-    ]
+      const progMap = {
+        buildingControl: ['ใบอนุญาต'],
+        riskZone:        ['งานสาธารณะ'],
+        zoningPlan:      ['ผังเมือง'],
+        planProject:     ['ก่อสร้าง'],
+        approvedProject: ['ก่อสร้าง'],
+        buildPlan:       ['ก่อสร้าง']
+      }
+      const rel = m.buildingControl || m.riskZone || m.zoningPlan || m.planProject || m.approvedProject || m.buildPlan
+      const descField = m.buildingControl?.use_purpose
+        || m.riskZone?.description
+        || m.zoningPlan?.notes
+        || m.planProject?.category
+        || m.approvedProject?.category
+        || m.buildPlan?.notes || ''
+
+      // รวมรูปภาพ: uploads (image types) + image_before/after
+      const uploadImgs = (m.uploads || []).filter(isImageUrl).map(u => u.url).filter(Boolean)
+      const baseImgs   = [m.image_before, m.image_after].filter(Boolean)
+      const allImgs    = [...new Set([...uploadImgs, ...baseImgs])]
+
+      // สร้าง entityRows สำหรับแสดงข้อมูลตาราง
+      const row = (label, value) => value ? { label, value: String(value) } : null
+      const fmtDate = d => d ? new Date(d).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : null
+      const fmtBudget = b => b ? Number(b).toLocaleString('th-TH') + ' บาท' : null
+      let entityRows = []
+      if (m.buildingControl) {
+        entityRows = [
+          row('ประเภทอาคาร', m.buildingControl.building_type),
+          row('วัตถุประสงค์การใช้', m.buildingControl.use_purpose),
+          row('เลขที่ใบอนุญาต', m.buildingControl.license_number),
+          row('สถานะ', m.buildingControl.status),
+          row('ปีงบประมาณ', m.year ? `พ.ศ. ${m.year}` : null),
+        ].filter(Boolean)
+      } else if (m.riskZone) {
+        entityRows = [
+          row('ประเภทพื้นที่เสี่ยง', m.riskZone.zoneType),
+          row('รหัสโซน', m.riskZone.zone_code),
+          row('คำอธิบาย', m.riskZone.description),
+          row('สถานะ', m.riskZone.status),
+          row('ปีงบประมาณ', m.year ? `พ.ศ. ${m.year}` : null),
+        ].filter(Boolean)
+      } else if (m.zoningPlan) {
+        entityRows = [
+          row('ชื่อพื้นที่', m.zoningPlan.areaName),
+          row('หมายเหตุ', m.zoningPlan.notes),
+          row('สถานะ', m.zoningPlan.status),
+          row('ปีงบประมาณ', m.year ? `พ.ศ. ${m.year}` : null),
+        ].filter(Boolean)
+      } else if (m.planProject) {
+        entityRows = [
+          row('ชื่อโครงการ', m.planProject.name),
+          row('ประเภท', m.planProject.category),
+          row('ผู้รับผิดชอบ', m.planProject.supervisor),
+          row('งบประมาณ', fmtBudget(m.planProject.budget)),
+          row('วันเริ่มต้น', fmtDate(m.planProject.startDate)),
+          row('วันสิ้นสุด', fmtDate(m.planProject.endDate)),
+          row('สถานะ', m.planProject.status),
+          row('ปีงบประมาณ', m.year ? `พ.ศ. ${m.year}` : null),
+        ].filter(Boolean)
+      } else if (m.approvedProject) {
+        entityRows = [
+          row('ชื่อโครงการ', m.approvedProject.title_project),
+          row('ประเภท', m.approvedProject.category),
+          row('ผู้รับผิดชอบ', m.approvedProject.supervisor),
+          row('งบประมาณ', fmtBudget(m.approvedProject.budget)),
+          row('สถานะ', m.approvedProject.status),
+          row('ปีงบประมาณ', m.year ? `พ.ศ. ${m.year}` : null),
+        ].filter(Boolean)
+      } else if (m.buildPlan) {
+        entityRows = [
+          row('พื้นที่ก่อสร้าง', m.buildPlan.areabuild),
+          row('หมายเหตุ', m.buildPlan.notes),
+        ].filter(Boolean)
+      }
+
+      return {
+        id: m.mapId,
+        name: m.name_local || rel?.building_type || rel?.zoneType || rel?.areaName || rel?.name || rel?.title_project || rel?.areabuild || 'ไม่ระบุชื่อ',
+        house_no: m.house_no || '',
+        type: typeMap[m.type] || '',
+        mapType: m.type,
+        year: m.year ? String(m.year) : '',
+        distance: 0,
+        address: m.address || '',
+        desc: descField,
+        image: allImgs[0] || '',
+        images: allImgs,
+        programs: progMap[m.type] || [],
+        entityRows,
+        lat: m.latitude,
+        lng: m.longitude,
+        geoJsonData: m.geoJsonData || null,
+        uploads: m.uploads || []
+      }
+    }
+
+    async function fetchMapData(year) {
+      try {
+        const url = year ? `/api/maps/filter?year=${encodeURIComponent(year)}` : '/api/maps/filter'
+        const res = await fetch(url)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        if (!data.success) throw new Error(data.message)
+
+        LOCATIONS    = (data.markers || []).map(apiItemToLoc)
+        apiLayersData = data.layers || {}
+        // รวมทุก type ไว้ใน ALL_ITEMS สำหรับ search
+        const layerLocs = Object.values(apiLayersData).flat().map(apiItemToLoc)
+        ALL_ITEMS = [...LOCATIONS, ...layerLocs]
+
+        loadApiLayers(apiLayersData)
+        update()
+      } catch (err) {
+        console.error('fetchMapData error:', err)
+        update()
+      }
+    }
 
     /* ════════════════════════════════════════
        STATE
@@ -335,13 +403,13 @@
        FILTER LOGIC
     ════════════════════════════════════════ */
     function getFiltered() {
-      let data = LOCATIONS.filter(l => {
+      // ค้นหาจากทุก type (markers + KML layers)
+      let data = ALL_ITEMS.filter(l => {
         const q = state.search.toLowerCase()
         if (q && !l.name.toLowerCase().includes(q) && !l.address.toLowerCase().includes(q) && !l.desc.toLowerCase().includes(q)) return false
         if (state.type && l.type !== state.type) return false
         if (state.year && l.year !== state.year) return false
         if (state.program && !l.programs.some(p => p.includes(state.program))) return false
-        if (l.distance > state.maxDist) return false
         return true
       })
 
@@ -417,36 +485,30 @@
 
       list.innerHTML = data.map(loc => {
         const sel = state.selected === loc.id
-        const stars = '★'.repeat(Math.floor(loc.rating)) + (loc.rating % 1 >= .5 ? '½' : '')
+        const colorDot = TYPE_COLOR[loc.mapType] || '#ec407a'
+        const primaryParts = [loc.house_no, loc.address].filter(Boolean)
+        const infoRows = loc.entityRows && loc.entityRows.length
+          ? loc.entityRows.map(r => `<div class="info-row"><span class="info-label">${r.label}</span><span class="info-value">${r.value}</span></div>`).join('')
+          : ''
         return `
     <div class="loc-card ${sel ? 'selected' : ''}" data-id="${loc.id}">
+      ${loc.image ? `
       <div class="card-img-wrap">
         <img src="${loc.image}" alt="${loc.name}" loading="lazy"
              onerror="this.onerror=null;this.src='${PH}'"/>
-        <div class="card-rating">${IC.star} ${loc.rating.toFixed(1)}</div>
-      </div>
+        <span class="card-type-badge" style="background:${colorDot}">${loc.type}</span>
+      </div>` : `
+      <div class="card-img-ph">
+        <span class="card-type-badge" style="background:${colorDot};position:static;margin-bottom:.25rem;">${loc.type}</span>
+        🏗️
+      </div>`}
       <div class="card-body">
         <div class="card-title-loc">${loc.name}</div>
-        <div class="card-meta">${IC.pin}<span>${loc.address}</span></div>
-        <div class="card-desc">${loc.desc}</div>
-
-        <div class="badges">
-          <span class="badge-type">${loc.type}</span>
-          <span class="badge-year">${IC.cal} ${loc.year}</span>
-          <span class="badge-dist">${loc.distance} กม.</span>
-        </div>
-
-        <div class="prog-list">
-          ${IC.usr}&nbsp;
-          ${loc.programs.map(p => `<span class="prog-tag">${p}</span>`).join('')}
-        </div>
-
-        <div class="contact-row">${IC.tel} ${loc.phone}</div>
-        <div class="contact-row">${IC.clk} ${loc.hours}</div>
-
+        ${primaryParts.length ? `<div class="card-address">${IC.pin}${primaryParts.join(' ')}</div>` : ''}
+        ${loc.year ? `<div class="card-year-badge">${IC.cal} ปีงบประมาณ ${loc.year}</div>` : ''}
+        ${infoRows ? `<div class="card-info-table">${infoRows}</div>` : ''}
         <div class="card-actions">
-          <button class="btn-act primary" data-action="nav" data-id="${loc.id}">${IC.nav} ไปที่หมุด</button>
-          <button class="btn-act" data-action="doc" data-id="${loc.id}" data-url="${loc.docUrl}">${IC.dl} โหลดเอกสาร</button>
+          <button class="btn-act primary" data-action="nav" data-id="${loc.id}">${IC.nav} ดูบนแผนที่</button>
         </div>
       </div>
     </div>`
@@ -458,13 +520,6 @@
       })
       list.querySelectorAll('[data-action="nav"]').forEach(btn => {
         btn.addEventListener('click', e => { e.stopPropagation(); flyTo(+btn.dataset.id) })
-      })
-      list.querySelectorAll('[data-action="doc"]').forEach(btn => {
-        btn.addEventListener('click', e => {
-          e.stopPropagation()
-          const url = btn.dataset.url
-          url ? window.open(url, '_blank') : alert('ไม่มีเอกสารสำหรับรายการนี้')
-        })
       })
 
       updateMarkers(data)
@@ -575,6 +630,79 @@
     }
     initDataLayers()
 
+    // ════════════════════════════════════════
+    // LOAD API LAYERS (KML/GeoJSON from DB)
+    // ════════════════════════════════════════
+    const API_LAYER_MAP = {
+      riskZone:        { group: layers.public,   color: '#0284c7' },
+      zoningPlan:      { group: layers.planning, color: '#ec407a' },
+      planProject:     { group: layers.project,  color: '#16a34a' },
+      approvedProject: { group: layers.approved, color: '#ca8a04' },
+      buildPlan:       { group: layers.heritage, color: '#ad1457' }
+    }
+
+    // กรอง GeoJSON features ที่มี coordinates null/NaN ออก
+    function sanitizeGeoJSON(data) {
+      if (!data) return null
+      const hasNull = s => s.includes('null') || s.includes('NaN')
+      if (data.type === 'FeatureCollection') {
+        const features = (data.features || []).filter(f => {
+          if (!f.geometry || !f.geometry.coordinates) return false
+          return !hasNull(JSON.stringify(f.geometry.coordinates))
+        })
+        return features.length ? { ...data, features } : null
+      }
+      if (data.type === 'Feature') {
+        if (!data.geometry?.coordinates) return null
+        return hasNull(JSON.stringify(data.geometry.coordinates)) ? null : data
+      }
+      // Geometry object
+      if (data.coordinates) {
+        return hasNull(JSON.stringify(data.coordinates)) ? null : data
+      }
+      return data
+    }
+
+    function loadApiLayers(apiLayers) {
+      // clear previously loaded API data from each group + refs
+      Object.values(API_LAYER_MAP).forEach(({ group }) => group.clearLayers())
+      Object.keys(kmlLayerRefs).forEach(k => delete kmlLayerRefs[k])
+
+      Object.entries(API_LAYER_MAP).forEach(([type, { group, color }]) => {
+        const items = apiLayers[type] || []
+        items.forEach(item => {
+          const rel = item[type]
+          const label = item.name_local || rel?.zoneType || rel?.areaName || rel?.name || rel?.title_project || rel?.areabuild || type
+          const popupHtml = `<b>${label}</b>${item.address ? '<br>' + item.address : ''}`
+
+          if (item.geoJsonData) {
+            try {
+              const clean = sanitizeGeoJSON(item.geoJsonData)
+              if (!clean) return
+              const geoLayer = L.geoJSON(clean, {
+                style: () => ({ color, weight: 2, fillOpacity: 0.2 }),
+                pointToLayer: (f, latlng) => {
+                  if (!latlng || latlng.lat == null || latlng.lng == null) return null
+                  return L.marker(latlng, { icon: makeMarker(color) })
+                },
+                onEachFeature: (f, layer) => {
+                  layer.bindPopup(f.properties?.name ? `<b>${f.properties.name}</b>` : popupHtml)
+                }
+              }).addTo(group)
+              kmlLayerRefs[item.mapId] = geoLayer   // เก็บ ref สำหรับ flyTo
+            } catch (e) {
+              console.warn('Invalid geoJsonData for', type, e)
+            }
+          } else if (validCoord(item.latitude, item.longitude)) {
+            const pin = L.marker([item.latitude, item.longitude], { icon: makeMarker(color) })
+              .bindPopup(popupHtml)
+              .addTo(group)
+            kmlLayerRefs[item.mapId] = { eachLayer: cb => cb(pin) }
+          }
+        })
+      })
+    }
+
     // Layer Control UI Logic
     const layerToggleBtn = document.getElementById('layer-toggle-btn')
     const layerPanel = document.getElementById('layer-panel')
@@ -635,13 +763,18 @@
     }
 
     let markersMap = {}
+    function validCoord(lat, lng) {
+      return Number.isFinite(lat) && Number.isFinite(lng)
+    }
     function updateMarkers(data) {
       layers.building.clearLayers()
       markersMap = {}
-      data.forEach(loc => {
+      // แสดง pin เฉพาะ item ที่มีพิกัดถูกต้อง
+      data.filter(loc => validCoord(loc.lat, loc.lng)).forEach(loc => {
         const isSel = state.selected === loc.id
+        const color = TYPE_COLOR[loc.mapType] || '#ec407a'
         const m = L.marker([loc.lat, loc.lng], {
-          icon: makeMarker(isSel ? '#ad1457' : '#ec407a', isSel),
+          icon: makeMarker(isSel ? '#ad1457' : color, isSel),
           zIndexOffset: isSel ? 1000 : 0
         }).addTo(layers.building)
         m.bindPopup(() => buildPopup(loc), { maxWidth: 300, className: 'detail-popup' })
@@ -651,10 +784,26 @@
     }
 
     function flyTo(id) {
-      const loc = LOCATIONS.find(l => l.id === id)
+      const loc = ALL_ITEMS.find(l => l.id === id) || LOCATIONS.find(l => l.id === id)
       if (!loc) return
-      map.flyTo([loc.lat, loc.lng], 17, { duration: 1.2 })
-      setTimeout(() => markersMap[id]?.openPopup(), 1300)
+
+      if (validCoord(loc.lat, loc.lng)) {
+        // marker — fly to point
+        map.flyTo([loc.lat, loc.lng], 17, { duration: 1.2 })
+        setTimeout(() => markersMap[id]?.openPopup(), 1300)
+      } else if (loc.geoJsonData) {
+        // KML layer — fly to GeoJSON bounds
+        try {
+          const bounds = L.geoJSON(loc.geoJsonData).getBounds()
+          if (bounds.isValid()) {
+            map.flyToBounds(bounds, { padding: [40, 40], duration: 1.2 })
+            setTimeout(() => {
+              const ref = kmlLayerRefs[id]
+              if (ref) ref.eachLayer(l => l.openPopup?.())
+            }, 1300)
+          }
+        } catch(e) { console.warn('flyTo KML error', e) }
+      }
     }
 
     /* ════════════════════════════════════════
@@ -686,26 +835,18 @@
         </div>
         <!-- Body -->
         <div class="detail-body">
-          <div class="detail-row">
+          ${loc.address ? `<div class="detail-row">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-            <span>${loc.address}</span>
+            <span>${[loc.house_no, loc.address].filter(Boolean).join(' ')}</span>
+          </div>` : ''}
+          <div class="detail-row" style="gap:.4rem;flex-wrap:wrap;">
+            <span style="font-size:.72rem;background:var(--pink-100);color:var(--pink-800);padding:.15rem .55rem;border-radius:999px;font-weight:600;">${loc.type}</span>
+            ${loc.year ? `<span style="font-size:.72rem;color:#6b7280;">ปีงบประมาณ ${loc.year}</span>` : ''}
           </div>
-          <div class="detail-row">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5 19.79 19.79 0 0 1 1.57 4.9 2 2 0 0 1 3.54 2.68h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.18a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            <span>${loc.phone}</span>
-          </div>
-          <div class="detail-row">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span>${loc.hours}</span>
-          </div>
-          <div class="detail-row">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            <span>${loc.rating.toFixed(1)} / 5</span>
-            &nbsp;·&nbsp;
-            <span style="font-size:.72rem;background:var(--pink-100);color:var(--pink-800);padding:.1rem .45rem;border-radius:999px;font-weight:600;">${loc.type}</span>
-            &nbsp;·&nbsp;
-            <span style="font-size:.72rem;color:#6b7280;">ปีงบ ${loc.year}</span>
-          </div>
+          ${loc.entityRows && loc.entityRows.length ? `
+          <div class="popup-info-table">
+            ${loc.entityRows.map(r => `<div class="info-row"><span class="info-label">${r.label}</span><span class="info-value">${r.value}</span></div>`).join('')}
+          </div>` : ''}
         </div>`
 
       // Slider logic (only when > 1 image)
@@ -788,7 +929,10 @@
     })
 
     document.getElementById('sel-type').addEventListener('change', e => { state.type = e.target.value; update() })
-    document.getElementById('sel-year').addEventListener('change', e => { state.year = e.target.value; update() })
+    document.getElementById('sel-year').addEventListener('change', e => {
+      state.year = e.target.value
+      fetchMapData(e.target.value)   // re-fetch from API with year filter
+    })
     document.getElementById('sel-program').addEventListener('change', e => { state.program = e.target.value; update() })
     document.getElementById('sel-sort').addEventListener('change', e => { state.sort = e.target.value; update() })
 
@@ -809,9 +953,9 @@
     document.getElementById('cookie-decline').addEventListener('click', hideCookie)
 
     /* ════════════════════════════════════════
-       INIT
+       INIT — โหลดข้อมูลจาก API
     ════════════════════════════════════════ */
-    update()
+    fetchMapData('')
   </script>
 </body>
 

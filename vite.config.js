@@ -16,6 +16,12 @@ export default defineConfig({
     port: 3002,
     strictPort: true,
     name: 'url',
-    open: '/map'
+    open: '/map',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
+      }
+    }
   }
 })

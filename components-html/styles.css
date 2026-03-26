@@ -589,6 +589,101 @@ input[type=range] {
   border-color: var(--pink-700);
 }
 
+/* ── Card type badge (image overlay) ── */
+.card-type-badge {
+  position: absolute;
+  top: .5rem;
+  left: .5rem;
+  color: #fff;
+  font-size: .68rem;
+  font-weight: 700;
+  padding: .18rem .55rem;
+  border-radius: 999px;
+  letter-spacing: .02em;
+  box-shadow: 0 1px 4px rgba(0,0,0,.18);
+}
+
+/* ── Card address line ── */
+.card-address {
+  font-size: .75rem;
+  color: #6b7280;
+  display: flex;
+  align-items: flex-start;
+  gap: .3rem;
+  margin-bottom: .25rem;
+  line-height: 1.4;
+}
+
+/* ── Card year badge ── */
+.card-year-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  font-size: .68rem;
+  font-weight: 500;
+  color: #1d4ed8;
+  background: #dbeafe;
+  border-radius: 4px;
+  padding: .15rem .45rem;
+  margin-bottom: .5rem;
+}
+
+/* ── Card info table (entity key-value rows) ── */
+.card-info-table {
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: .5rem;
+}
+
+.info-row {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  padding: .28rem .55rem;
+  font-size: .74rem;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-row:nth-child(odd) {
+  background: #fafafa;
+}
+
+.info-label {
+  flex-shrink: 0;
+  width: 7.5rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.info-value {
+  color: #111827;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+/* ── Popup info table ── */
+.popup-info-table {
+  border: 1px solid #f0f0f0;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: .4rem;
+}
+
+.popup-info-table .info-row {
+  font-size: .72rem;
+  padding: .22rem .45rem;
+}
+
+.popup-info-table .info-label {
+  width: 6.5rem;
+  font-size: .72rem;
+}
+
 /* ── Empty / loading states ── */
 .state-wrap {
   padding: 2.5rem 1rem;
