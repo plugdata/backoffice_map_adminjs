@@ -3,7 +3,8 @@
     "allow": [
       "Bash(node --check:*)",
       "WebFetch(domain:docs.adminjs.co)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "Bash(curl -s http://localhost:3002/map)"
     ]
   }
 }

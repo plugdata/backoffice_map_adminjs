@@ -720,6 +720,15 @@ input[type=range] {
   height: 100%;
 }
 
+/* Mobile backdrop — hidden on desktop, shown when panel open on mobile */
+#panel-backdrop {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, .35);
+  z-index: 199;
+}
+
 /* Panel collapse toggle (floating arrow on map edge) */
 #panel-edge-btn {
   position: absolute;
@@ -757,6 +766,8 @@ input[type=range] {
   flex-direction: column;
   align-items: flex-end;
   gap: 10px;
+  /* Pass-through wrapper — only direct interactive children receive pointer events */
+  pointer-events: none;
 }
 
 #layer-toggle-btn {
@@ -772,6 +783,7 @@ input[type=range] {
   justify-content: center;
   box-shadow: 0 4px 15px rgba(233, 30, 99, 0.4);
   transition: all .25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: auto;
 }
 
 #layer-toggle-btn:hover {
@@ -801,6 +813,11 @@ input[type=range] {
   opacity: 0;
   transform: scale(0.9) translateY(-10px);
   pointer-events: none;
+}
+
+/* Panel visible — must re-enable pointer events (parent wrap is pass-through) */
+#layer-panel:not(.layer-panel-hidden) {
+  pointer-events: auto;
 }
 
 .layer-section {
@@ -1166,6 +1183,7 @@ input[type=range] {
     --panel-w: 100vw;
   }
 
+  /* Panel slides in from left as overlay — starts closed (JS adds .collapsed on init) */
   #panel {
     position: absolute;
     z-index: 200;
@@ -1179,13 +1197,72 @@ input[type=range] {
     bottom: .5rem;
   }
 
-  #nav-search-wrap {
-    max-width: 180px;
+  /* Edge arrow button — replaced by hamburger on mobile */
+  #panel-edge-btn {
+    display: none !important;
   }
 
+  /* Cookie banner — compact single row on mobile */
+  #cookie-banner {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    padding: .5rem .75rem;
+    gap: .5rem;
+  }
+
+  .cookie-text {
+    font-size: .72rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cookie-btns {
+    display: flex;
+    gap: .4rem;
+    flex-shrink: 0;
+  }
+
+  .btn-cookie-decline,
+  .btn-cookie-accept {
+    padding: .25rem .5rem !important;
+    font-size: .72rem !important;
+    white-space: nowrap;
+  }
+
+  /* Search bar expands to fill available space — prominent on mobile */
+  #nav-search-wrap {
+    flex: 1;
+    max-width: none;
+  }
+
+  #nav-search {
+    font-size: .95rem;
+  }
+
+  /* Hide panel edge-btn — hamburger ☰ used instead on mobile */
+  #panel-edge-btn {
+    display: none !important;
+  }
+
+  /* Hide decorative stats to save navbar space */
   .nav-stat,
   .nav-sep,
-  .weather-pill {
+  .weather-pill,
+  .brand-sub {
     display: none !important;
+  }
+
+  /* Popup: full-width friendly on small screens */
+  .leaflet-popup-content-wrapper {
+    max-width: calc(100vw - 32px) !important;
+  }
+  .leaflet-popup-content {
+    width: auto !important;
+    min-width: 240px;
+    max-width: calc(100vw - 48px) !important;
+  }
+  .detail-popup-inner .popup-slider img {
+    max-height: 140px;
   }
 }

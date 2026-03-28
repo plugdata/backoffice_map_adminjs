@@ -32,6 +32,7 @@ import importBuildingGeoJsonRoutes from './routes/import-building-geojson.js'
 import importGenericGeoJsonRoutes from './routes/import-generic-geojson.js'
 import uploadPictureRoutes from './routes/uploadpicture.js'
 import uploadPictureMapRoutes from './routes/upload-picture-map.js'
+import visitorRoutes from './routes/visitor.js'
 // Swagger
 import { specs, swaggerUi } from './config/swagger.js'
 
@@ -106,6 +107,7 @@ const initializeApp = async () => {
     app.use('/api/risk-geojson', importRiskGeoJsonRoutes)
     app.use('/api/building-geojson', importBuildingGeoJsonRoutes)
     app.use('/api/generic-geojson', importGenericGeoJsonRoutes)
+    app.use('/api/visitor', visitorRoutes)
     app.use('/router-html', routerHtml)
     // Test page routes
     app.get('/upload-test', (req, res) => {

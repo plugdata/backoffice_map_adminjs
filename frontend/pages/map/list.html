@@ -10,86 +10,1279 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
     <link href="../../assets/css/style.css" rel="stylesheet">
     <link href="../../assets/css/admin.css" rel="stylesheet">
+    <style>
+        /* ── Layout ─────────────────────────────────── */
+        .map-layout {
+            display: flex;
+            height: calc(100vh - 64px);
+            overflow: hidden;
+        }
+
+        .map-sidebar {
+            width: 420px;
+            min-width: 300px;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e2e8f0;
+            background: #fff;
+            flex-shrink: 0;
+        }
+
+        .map-sidebar-header {
+            padding: 16px 16px 0;
+            border-bottom: 1px solid #f1f5f9;
+            background: #fff;
+        }
+
+        .map-card-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 10px 60px;
+        }
+
+        .map-panel {
+            flex: 1;
+            position: relative;
+        }
+
+        #mainMap {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ── Card — click to fly, NOT navigate ─────── */
+        .map-item-card {
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 8px;
+            background: #fff;
+            cursor: pointer;
+            transition: border-color .18s, box-shadow .18s, background .15s;
+            position: relative;
+        }
+
+        .map-item-card:hover {
+            border-color: #b2ddd6;
+            box-shadow: 0 2px 12px rgba(62, 179, 157, .1);
+            background: #fbfffe;
+        }
+
+        .map-item-card.active {
+            border-color: #3eb39d;
+            background: #f0faf8;
+            box-shadow: 0 4px 16px rgba(62, 179, 157, .18);
+        }
+
+        .card-id {
+            font-size: .67rem;
+            color: #94a3b8;
+            font-weight: 600;
+            letter-spacing: .04em;
+        }
+
+        .card-title {
+            font-weight: 700;
+            font-size: .94rem;
+            color: #1e293b;
+            margin: 2px 0 4px;
+            line-height: 1.3;
+        }
+
+        .card-address {
+            font-size: .77rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        .card-coords {
+            font-size: .7rem;
+            color: #94a3b8;
+            font-family: monospace;
+        }
+
+        /* ── "ดูรายละเอียด" button (per-type color) ── */
+        .btn-detail {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: .74rem;
+            font-weight: 600;
+            border-radius: 7px;
+            padding: 4px 12px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity .15s, transform .1s;
+            margin-top: 8px;
+        }
+
+        .btn-detail:hover {
+            opacity: .85;
+            transform: translateY(-1px);
+        }
+
+        .btn-detail.building {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .btn-detail.risk {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .btn-detail.zoning {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .btn-detail.map-own {
+            background: #f0faf8;
+            color: #0f766e;
+            border: 1px solid #a7f3d0;
+        }
+
+        /* ── Type badges ─────────────────────────────── */
+        .type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: .67rem;
+            font-weight: 600;
+            border-radius: 20px;
+            padding: 2px 8px;
+            margin-right: 4px;
+            margin-bottom: 2px;
+        }
+
+        .type-building {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .type-risk {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .type-zoning {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .type-none {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        /* ── Search ──────────────────────────────────── */
+        .search-bar {
+            position: relative;
+        }
+
+        .search-bar .bi-search {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: .9rem;
+            pointer-events: none;
+        }
+
+        .search-bar input {
+            padding-left: 32px;
+            border-radius: 8px;
+            font-size: .85rem;
+        }
+
+        /* ── Stats ───────────────────────────────────── */
+        .stats-strip {
+            display: flex;
+            gap: 8px;
+            padding: 8px 14px 10px;
+            font-size: .77rem;
+            color: #64748b;
+            flex-wrap: wrap;
+        }
+
+        .stat-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 3px 10px;
+        }
+
+        .stat-chip i {
+            color: #3eb39d;
+        }
+
+        /* ── Map toolbar ─────────────────────────────── */
+        .map-toolbar {
+            position: absolute;
+            z-index: 500;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .map-ctrl-btn {
+            background: #fff;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .08);
+            transition: border-color .15s;
+        }
+
+        .map-ctrl-btn:hover {
+            border-color: #3eb39d;
+        }
+
+        /* ── Leaflet popup card ──────────────────────────
+           ต้องใช้ !important เพราะ Leaflet ใส่ style inline  */
+        .lpc .leaflet-popup-content-wrapper {
+            padding: 0 !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            box-shadow: 0 8px 28px rgba(0,0,0,.18) !important;
+        }
+        .lpc .leaflet-popup-content {
+            margin: 0 !important;
+            width: auto !important;
+        }
+        .lpc .leaflet-popup-tip-container { margin-top: -1px; }
+
+        /* popup card inner layout */
+        .lpc-card { width: 270px; font-family:'Sarabun',sans-serif; }
+        .lpc-img  { width:100%; height:138px; object-fit:cover; display:block; }
+        .lpc-img-wrap { position:relative; background:#f1f5f9; overflow:hidden; }
+        .lpc-ctr  {
+            position:absolute; top:7px; right:8px;
+            background:rgba(0,0,0,.45); color:#fff;
+            font-size:.66rem; border-radius:10px; padding:2px 7px;
+        }
+        .lpc-arr  {
+            position:absolute; top:50%; transform:translateY(-50%);
+            background:rgba(255,255,255,.82); border:none;
+            border-radius:50%; width:26px; height:26px;
+            font-size:.9rem; cursor:pointer; line-height:1;
+            display:flex; align-items:center; justify-content:center;
+        }
+        .lpc-arr:hover { background:rgba(255,255,255,.97) !important; }
+        .lpc-body { padding:11px 13px 13px; }
+        .lpc-badges { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px; }
+        .lpc-badge {
+            font-size:.66rem; font-weight:700;
+            border-radius:20px; padding:2px 9px; line-height:1.6;
+        }
+        .lpc-title {
+            font-weight:700; font-size:.93rem; color:#1e293b;
+            margin-bottom:8px; line-height:1.3;
+        }
+        .lpc-table { width:100%; border-collapse:collapse; margin-bottom:10px; }
+        .lpc-table td { padding:3px 0; font-size:.72rem; vertical-align:top; }
+        .lpc-table td:first-child,
+        .lpc-table .lpc-table-k  { padding-right:10px; color:#64748b; white-space:nowrap; }
+        .lpc-table td:last-child,
+        .lpc-table .lpc-table-v  { color:#1e293b; font-weight:600; line-height:1.4; }
+        .lpc-btn {
+            display:inline-flex; align-items:center; gap:5px;
+            font-size:.74rem; font-weight:600; text-decoration:none;
+            border-radius:7px; padding:5px 12px; margin-top:2px;
+            transition:opacity .15s;
+        }
+        .lpc-btn:hover { opacity:.82; }
+
+        /* ── KML / GeoJSON Layer Styles ─────────────── */
+        /* Leaflet path elements — จัดสไตล์ตามธีมหลัก */
+        .leaflet-overlay-pane path {
+            transition: stroke-width .15s, stroke-opacity .15s, fill-opacity .15s;
+        }
+
+        /* Polygon / LineString active glow (ใช้ outline filter) */
+        .geo-layer-active path {
+            filter: drop-shadow(0 0 4px rgba(0,0,0,.25));
+        }
+
+        /* KML feature popup — ปรับ tip ให้ตรงกับ card */
+        .lpc .leaflet-popup-tip {
+            background: #fff !important;
+        }
+
+        /* Coordinate monospace row in popup */
+        .lpc-coord {
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: .68rem;
+            color: #64748b;
+            background: #f8fafc;
+            border-radius: 5px;
+            padding: 2px 6px;
+            display: inline-block;
+            margin-top: 2px;
+        }
+
+        /* ── Skeleton ────────────────────────────────── */
+        .skeleton {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200%;
+            animation: shimmer 1.2s infinite;
+            border-radius: 6px;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0
+            }
+
+            100% {
+                background-position: -200% 0
+            }
+        }
+
+        .sk-line {
+            height: 11px;
+            margin-bottom: 6px;
+        }
+
+        .sk-card {
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 8px;
+        }
+
+        /* ── Empty ───────────────────────────────────── */
+        .list-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #94a3b8;
+        }
+
+        .list-empty i {
+            font-size: 2.2rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        /* ── will-change hints ───────────────────────── */
+        .map-item-card {
+            will-change: border-color;
+        }
+        #mainMap {
+            will-change: transform;
+        }
+
+        /* ── Mobile toggle button ────────────────────── */
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1100;
+            background: #3eb39d;
+            color: #fff;
+            border: none;
+            border-radius: 24px;
+            padding: 10px 22px;
+            font-size: .82rem;
+            font-weight: 700;
+            font-family: 'Sarabun', sans-serif;
+            box-shadow: 0 4px 16px rgba(62,179,157,.4);
+            cursor: pointer;
+            gap: 7px;
+            align-items: center;
+        }
+
+        /* ── Responsive ──────────────────────────────── */
+        @media (max-width: 768px) {
+            .map-layout {
+                flex-direction: column-reverse;   /* map ข้างบน, list ข้างล่าง */
+                height: 100dvh;
+                height: calc(var(--vh, 1vh) * 100);
+                overflow: hidden;
+            }
+
+            .map-sidebar {
+                width: 100%;
+                max-width: 100%;
+                border-right: none;
+                border-top: 1px solid #e2e8f0;
+                /* เริ่มต้นซ่อน — toggle ได้ */
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height .3s ease;
+            }
+
+            .map-sidebar.open {
+                max-height: 55dvh;
+                max-height: calc(var(--vh, 1vh) * 55);
+                overflow-y: auto;
+            }
+
+            .map-card-list {
+                max-height: none;
+                padding-bottom: 80px;   /* space for toggle btn */
+            }
+
+            .map-panel {
+                flex: 1;
+                min-height: 0;
+            }
+
+            .mobile-toggle {
+                display: inline-flex;
+            }
+
+            /* ซ่อน header sidebar บน mobile เมื่อปิด */
+            .map-sidebar-header {
+                padding: 12px 12px 0;
+            }
+        }
+    </style>
 </head>
 
 <body>
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <div class="d-flex">
         <nav class="sidebar bg-white border-end" id="sidebar"></nav>
-        <main class="main-content flex-fill">
+        <main class="main-content flex-fill" style="overflow:hidden;">
             <header id="main-header" class="bg-white border-bottom p-3 sticky-top shadow-sm"></header>
-            <div class="page-content">
-                <div class="page-header">
-                    <h1 class="page-title" id="pageTitle">แผนที่</h1>
-                    <p class="page-subtitle">จัดการข้อมูลแผนที่ในระบบ</p>
+
+            <div class="map-layout">
+
+                <!-- ════ LEFT : Card List ═══════════════════ -->
+                <div class="map-sidebar">
+                    <div class="map-sidebar-header">
+
+                        <div class="mb-3">
+                            <h5 class="mb-0 fw-bold" style="color:#1e293b;">
+                                <i class="fas fa-map-marker-alt me-2" style="color:#3eb39d;"></i>รายการแผนที่
+                            </h5>
+                            <small class="text-muted">
+                                <i class="bi bi-hand-index me-1"></i>คลิก card เพื่อดูบนแผนที่ ·
+                                คลิกปุ่มเพื่อไปยังแบบฟอร์ม
+                            </small>
+                        </div>
+
+                        <!-- Search -->
+                        <div class="search-bar mb-2">
+                            <i class="bi bi-search"></i>
+                            <input type="text" class="form-control form-control-sm" id="searchInput"
+                                placeholder="ค้นหาชื่อสถานที่ ที่อยู่...">
+                        </div>
+
+                        <!-- Filter pills -->
+                        <div class="d-flex flex-wrap gap-1 pb-3 mt-2">
+                            <button class="filter-pill" data-filter="all">ทั้งหมด</button>
+                            <button class="filter-pill" data-filter="buildingControl">งานอาคาร</button>
+                            <button class="filter-pill" data-filter="riskZone">ระวางที่สาธารณะ</button>
+                            <button class="filter-pill" data-filter="zoningPlan">แผนผังเมือง</button>
+                            <button class="filter-pill" data-filter="none">ไม่ระบุประเภท</button>
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="stats-strip">
+                        <span class="stat-chip">
+                            <i class="bi bi-geo-alt-fill"></i>
+                            <span id="statTotal">–</span> ตำแหน่งทั้งหมด
+                        </span>
+                        <span class="stat-chip">
+                            <i class="bi bi-funnel"></i> แสดง <span id="statFiltered">–</span>
+                        </span>
+                    </div>
+
+                    <!-- Cards -->
+                    <div class="map-card-list" id="cardList"></div>
                 </div>
-                <div class="toolbar">
-                    <div class="toolbar-left">
-                        <a href="form.html" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>เพิ่มข้อมูล</a>
-                        <button class="btn btn-outline-danger" id="bulkDeleteBtn" disabled><i
-                                class="bi bi-trash me-1"></i>ลบที่เลือก (<span id="selectedCount">0</span>)</button>
-                    </div>
-                    <div class="toolbar-right">
-                        <div class="search-box">
-                            <i class="bi bi-search search-icon"></i>
-                            <input type="text" class="form-control" id="searchInput" placeholder="ค้นหา...">
-                        </div>
-                        <button class="btn btn-outline-secondary" onclick="location.reload()"><i
-                                class="bi bi-arrow-clockwise"></i></button>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="dataTable"></table>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-white">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                            <div id="recordCount" class="text-muted small"></div>
-                            <div id="pagination"></div>
-                        </div>
+
+                <!-- ════ RIGHT : Leaflet Map ════════════════ -->
+                <div class="map-panel">
+                    <div id="mainMap"></div>
+                    <div class="map-toolbar">
+                        <button class="map-ctrl-btn" id="btnFitAll" title="แสดงทุกตำแหน่ง">
+                            <i class="bi bi-fullscreen" style="font-size:.85rem;"></i>
+                        </button>
+                        <button class="map-ctrl-btn" id="btnMyLoc" title="ตำแหน่งของฉัน">
+                            <i class="bi bi-crosshair" style="font-size:.85rem;"></i>
+                        </button>
                     </div>
                 </div>
             </div>
         </main>
     </div>
+
+    <!-- Mobile toggle button -->
+    <button class="mobile-toggle" id="mobileToggle">
+        <i class="bi bi-list-ul"></i>
+        <span id="mobileToggleTxt">ดูรายการ</span>
+    </button>
+
     <div id="loadingOverlay">
         <div class="loading-spinner">
-            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">กำลังโหลด...</span>
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">กำลังโหลด...</span>
             </div>
             <div class="mt-2">กำลังโหลดข้อมูล...</div>
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <!-- GeoJsonAdapter — KML/GeoJSON parser (in-project, no CDN needed) -->
+    <script src="../../modules/GeoJsonAdapter.js"></script>
     <script src="../../assets/js/config.js"></script>
     <script src="../../assets/js/apiClient.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script src="../../assets/js/i18n.js"></script>
     <script src="../../assets/js/app.js"></script>
-    <script src="../../modules/TableManager.js"></script>
-    <script src="../../modules/PaginationManager.js"></script>
-    <script src="../../modules/CrudManager.js"></script>
+
     <script>
-        const RESOURCE_NAME = 'Map';
+        /* ═══════════════════════════════════════════════════════════
+           MAP LIST  –  read-only research view
+           • คลิก card        → fly to marker + highlight (ไม่ navigate)
+           • คลิก marker      → highlight card + scroll + popup
+           • ปุ่ม "ดูรายละเอียด" → navigate ไปยัง form ของ resource นั้น
+        ═══════════════════════════════════════════════════════════ */
         if (!authManager.requireAuth()) { }
-        let crudManager;
+
+        // ── State ────────────────────────────────────────────
+        let allMaps = [];
+        let filteredMaps = [];
+        let markerMap  = {};     // id → { marker, color }
+        let geoLayers  = {};     // id → L.geoJSON layer
+        let geoLookup  = {};     // mapId → geoJsonData (raw string/obj)
+        let activeId   = null;
+        let curFilter  = 'all';
+        let leafletMap, clusterGroup, geoLayerGroup;
+
+        // ════════════════════════════════════════════════════
+        //  ROUTING TABLE  — resource type → form page URL
+        // ════════════════════════════════════════════════════
+        /**
+         * Returns the URL to navigate when "ดูรายละเอียด" is clicked.
+         * Uses the RELATED resource id (not the map id).
+         */
+        function getDetailUrl(m) {
+            if (m.buildingControl)
+                return `../building-control/form.html?id=${m.buildingControl.id}`;
+            if (m.riskZone)
+                return `../risk-zone/form.html?id=${m.riskZone.id}`;
+            if (m.zoningPlan)
+                return `../zoning-plan/form.html?id=${m.zoningPlan.id}`;
+            // no related resource → go to map's own form
+            return `form.html?id=${m.id}`;
+        }
+
+        /** Label & style for the detail button */
+        function getDetailBtn(m) {
+            if (m.buildingControl)
+                return { cls: 'building', icon: 'bi-building', label: 'ดูงานควบคุมอาคาร' };
+            if (m.riskZone)
+                return { cls: 'risk', icon: 'bi-exclamation-triangle', label: 'ดูระวางที่สาธารณะ' };
+            if (m.zoningPlan)
+                return { cls: 'zoning', icon: 'bi-layers', label: 'ดูแผนผังเมือง' };
+            return { cls: 'map-own', icon: 'bi-geo-alt', label: 'ดูรายละเอียดแผนที่' };
+        }
+
+        /** Same for Leaflet popup */
+        function getPopupLink(m) {
+            const url = getDetailUrl(m);
+            const { cls, icon, label } = getDetailBtn(m);
+            const bg = { building: '#dbeafe', risk: '#fee2e2', zoning: '#dcfce7', 'map-own': '#f0faf8' }[cls];
+            const co = { building: '#1d4ed8', risk: '#dc2626', zoning: '#15803d', 'map-own': '#0f766e' }[cls];
+            return `<a href="${url}" class="popup-link" style="background:${bg};color:${co};">
+                    <i class="bi ${icon}"></i>${label}
+                </a>`;
+        }
+
+        // ── Filter pill styles ───────────────────────────────
+        const PILL_CLR = {
+            all: '#3eb39d', buildingControl: '#93c5fd', riskZone: '#fca5a5', zoningPlan: '#86efac', none: '#cbd5e1'
+        };
+        const PILL_TXT = {
+            all: '#0f766e', buildingControl: '#1d4ed8', riskZone: '#dc2626', zoningPlan: '#15803d', none: '#64748b'
+        };
+        function stylePills() {
+            document.querySelectorAll('.filter-pill').forEach(btn => {
+                const f = btn.dataset.filter;
+                const on = f === curFilter;
+                btn.style.cssText =
+                    `font-size:.72rem;border-radius:20px;padding:3px 11px;cursor:pointer;` +
+                    `border:1.5px solid ${PILL_CLR[f]};transition:all .15s;` +
+                    `color:${on ? '#fff' : PILL_TXT[f]};` +
+                    `background:${on ? PILL_CLR[f] : '#fff'};` +
+                    `font-weight:${on ? '700' : '400'};`;
+            });
+        }
+
+        // ── Load nav components ──────────────────────────────
         async function loadComponents() {
-            try { await Promise.all([loadComponent('../../components/navMenu.html', 'sidebar'), loadComponent('../../components/header.html', 'main-header')]); initPage(); }
-            catch (error) { console.error('Error loading components:', error); }
+            await Promise.all([
+                loadComponent('../../components/navMenu.html', 'sidebar'),
+                loadComponent('../../components/header.html', 'main-header')
+            ]).catch(console.error);
+            if (window.setBreadcrumb) {
+                setBreadcrumb([
+                    { label: 'หน้าหลัก', href: '/frontend/pages/dashboard.html' },
+                    { label: 'แผนที่' }
+                ]);
+            }
         }
-        async function initPage() {
-            const resourceConfig = RESOURCES[RESOURCE_NAME];
-            if (resourceConfig && document.getElementById('pageTitle')) document.getElementById('pageTitle').textContent = resourceConfig.labelPlural;
-            document.title = `${resourceConfig ? resourceConfig.labelPlural : 'แผนที่'} - Backoffice`;
-            if (window.setBreadcrumb) setBreadcrumb([{ label: 'หน้าหลัก', href: '/frontend/pages/dashboard.html' }, { label: resourceConfig ? resourceConfig.labelPlural : 'แผนที่' }]);
-            crudManager = new CrudManager(RESOURCE_NAME);
-            await crudManager.init();
-            await crudManager.loadData();
+
+        // ── Address builder ──────────────────────────────────
+        function buildAddress(m) {
+            const parts = [
+                m.house_no ? 'บ้านเลขที่ ' + m.house_no : null,
+                m.village_no ? 'หมู่ ' + m.village_no : null,
+                m.soi ? 'ซ.' + m.soi : null,
+                m.road ? 'ถ.' + m.road : null,
+                m.subdistrict ? 'ต.' + m.subdistrict : null,
+                m.district ? 'อ.' + m.district : null,
+                m.province ? 'จ.' + m.province : null,
+            ].filter(Boolean);
+            if (!parts.length && m.address) return m.address;
+            return parts.join(' ') || '–';
         }
-        document.addEventListener('DOMContentLoaded', loadComponents);
+
+        // ── Type helpers ─────────────────────────────────────
+        function getType(m) {
+            if (m.buildingControl) return 'buildingControl';
+            if (m.riskZone) return 'riskZone';
+            if (m.zoningPlan) return 'zoningPlan';
+            return 'none';
+        }
+        const TYPE_META = {
+            buildingControl: { cls: 'type-building', icon: 'bi-building', label: 'งานควบคุมอาคาร' },
+            riskZone: { cls: 'type-risk', icon: 'bi-exclamation-triangle', label: 'ระวางที่สาธารณะ' },
+            zoningPlan: { cls: 'type-zoning', icon: 'bi-layers', label: 'แผนผังเมือง' },
+            none: { cls: 'type-none', icon: 'bi-geo-alt', label: 'ตำแหน่งทั่วไป' },
+        };
+        function typeBadge(m) {
+            const { cls, icon, label } = TYPE_META[getType(m)];
+            return `<span class="type-badge ${cls}"><i class="bi ${icon}"></i>${label}</span>`;
+        }
+        const MARKER_COLORS = {
+            buildingControl: '#1d4ed8', riskZone: '#dc2626', zoningPlan: '#16a34a', none: '#3eb39d'
+        };
+        function markerColor(m) { return MARKER_COLORS[getType(m)]; }
+
+        // ── SVG marker icon ──────────────────────────────────
+        function makeIcon(color, active = false) {
+            const s = active ? 36 : 28;
+            const svg = encodeURIComponent(
+                `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 32">
+                <path d="M12 0C7.58 0 4 3.58 4 8c0 7.5 8 16 8 16s8-8.5 8-16C20 3.58 16.42 0 12 0z"
+                    fill="${color}" stroke="white" stroke-width="1.5"/>
+                <circle cx="12" cy="8" r="4" fill="white"/>
+            </svg>`
+            );
+            return L.divIcon({
+                html: `<img src="data:image/svg+xml,${svg}"
+                       style="width:${s}px;height:${Math.round(s * 32 / 24)}px;
+                              filter:${active ? 'drop-shadow(0 0 5px rgba(0,0,0,.3))' : 'none'}">`,
+                iconSize: [s, Math.round(s * 32 / 24)],
+                iconAnchor: [s / 2, Math.round(s * 32 / 24)],
+                className: ''
+            });
+        }
+
+        // ════════════════════════════════════════════════════
+        //  POPUP CARD  — image slider + badge + field table
+        // ════════════════════════════════════════════════════
+
+        /* per-popup slider state */
+        const _sliderIdx = {};
+
+        function _sliderSet(id, idx, total) {
+            const wrap = document.getElementById(`ps-${id}`);
+            if (!wrap) return;
+            wrap.querySelectorAll('.ps-img').forEach((img, i) => {
+                img.style.display = i === idx ? 'block' : 'none';
+            });
+            const ctr = wrap.querySelector('.ps-ctr');
+            if (ctr) ctr.textContent = `${idx + 1}/${total}`;
+        }
+
+        window._sliderNext = function(id, total) {
+            _sliderIdx[id] = ((_sliderIdx[id] || 0) + 1) % total;
+            _sliderSet(id, _sliderIdx[id], total);
+        };
+        window._sliderPrev = function(id, total) {
+            _sliderIdx[id] = ((_sliderIdx[id] || 0) - 1 + total) % total;
+            _sliderSet(id, _sliderIdx[id], total);
+        };
+
+        /* type → accent color mapping */
+        const TYPE_COLOR = {
+            buildingControl: { bg:'#dbeafe', text:'#1d4ed8', badge:'#1d4ed8' },
+            riskZone:        { bg:'#fee2e2', text:'#dc2626', badge:'#dc2626' },
+            zoningPlan:      { bg:'#dcfce7', text:'#16a34a', badge:'#16a34a' },
+            none:            { bg:'#f0faf8', text:'#0f766e', badge:'#0f766e' },
+        };
+
+        /**
+         * Build popup card HTML — แบบ LocationCards จาก components-html
+         * ใช้ CSS classes .lpc-* แทน inline style เพื่อหลีกเลี่ยง Leaflet override
+         * featName = ชื่อ feature จาก KML properties (optional)
+         */
+        function buildPopupCard(m, featName) {
+            try {
+                const type = getType(m);
+                const clr  = TYPE_COLOR[type] || TYPE_COLOR.none;
+                const meta = TYPE_META[type]   || TYPE_META.none;
+                const title   = m.name_local || featName || 'ไม่มีชื่อ';
+                const addr    = buildAddress(m);
+                const detUrl  = getDetailUrl(m);
+                const detBtn  = getDetailBtn(m);
+
+                /* ── image slider ── */
+                const imgs = [m.image_before, m.image_after].filter(Boolean);
+                let imgHtml = '';
+                if (imgs.length) {
+                    _sliderIdx[m.id] = 0;
+                    const imgTags = imgs.map(function(src, i) {
+                        return '<img class="ps-img lpc-img"'
+                            + ' src="' + src + '"'
+                            + ' style="display:' + (i === 0 ? 'block' : 'none') + '"'
+                            + ' onerror="this.style.display=\'none\'">';
+                    }).join('');
+
+                    const arrows = imgs.length > 1
+                        ? '<button class="lpc-arr" style="left:6px"'
+                            + ' onclick="_sliderPrev(' + m.id + ',' + imgs.length + ')">&#8249;</button>'
+                          + '<button class="lpc-arr" style="right:6px"'
+                            + ' onclick="_sliderNext(' + m.id + ',' + imgs.length + ')">&#8250;</button>'
+                          + '<span class="lpc-ctr ps-ctr">1/' + imgs.length + '</span>'
+                        : '';
+
+                    imgHtml = '<div id="ps-' + m.id + '" class="lpc-img-wrap">'
+                            + imgTags + arrows + '</div>';
+                }
+
+                /* ── coordinates line ── */
+                const coordLine = (m.latitude && m.longitude)
+                    ? Number(m.latitude).toFixed(5) + ', ' + Number(m.longitude).toFixed(5)
+                    : null;
+
+                /* ── address ── */
+                const addrDisplay = addr !== '–' ? addr : (m.address || null);
+
+                /* ── field rows ── */
+                var badgeLabel = '', year = '', pairs = [];
+                if (m.buildingControl) {
+                    badgeLabel = 'ใบอนุญาต';
+                    year = m.buildingControl.year ? 'พ.ศ. ' + m.buildingControl.year : '';
+                    pairs = [
+                        ['ประเภทอาคาร',        m.buildingControl.building_type],
+                        ['วัตถุประสงค์การใช้',  m.buildingControl.use_purpose],
+                        ['ปีงบประมาณ',          year],
+                        ['ที่อยู่',             addrDisplay],
+                        ['พิกัด',               coordLine],
+                    ];
+                } else if (m.riskZone) {
+                    badgeLabel = 'ระวาง';
+                    year = m.riskZone.year ? 'พ.ศ. ' + m.riskZone.year : '';
+                    pairs = [
+                        ['ประเภทพื้นที่',  m.riskZone.zoneType],
+                        ['รายละเอียด',    m.riskZone.description],
+                        ['ปีงบประมาณ',    year],
+                        ['ที่อยู่',        addrDisplay],
+                        ['พิกัด',          coordLine],
+                    ];
+                } else if (m.zoningPlan) {
+                    badgeLabel = 'แผนผัง';
+                    year = m.zoningPlan.year ? 'พ.ศ. ' + m.zoningPlan.year : '';
+                    pairs = [
+                        ['ชื่อพื้นที่',  m.zoningPlan.areaName],
+                        ['หมายเหตุ',     m.zoningPlan.notes],
+                        ['ปีงบประมาณ',   year],
+                        ['ที่อยู่',       addrDisplay],
+                        ['พิกัด',         coordLine],
+                    ];
+                } else {
+                    pairs = [
+                        ['ที่อยู่',  addrDisplay],
+                        ['พิกัด',    coordLine],
+                    ];
+                }
+
+                const tableRows = pairs.filter(function(r) { return r[1]; })
+                    .map(function(r) {
+                        var valHtml = r[0] === 'พิกัด'
+                            ? '<span class="lpc-coord"><i class="bi bi-geo-fill" style="color:#3eb39d;margin-right:3px;font-size:.65rem;"></i>' + r[1] + '</span>'
+                            : r[1];
+                        return '<tr><td class="lpc-table-k">' + r[0]
+                             + '</td><td class="lpc-table-v">' + valHtml + '</td></tr>';
+                    }).join('');
+
+                const tableHtml = tableRows
+                    ? '<table class="lpc-table">' + tableRows + '</table>' : '';
+
+                /* ── badges ── */
+                const typeBadgeHtml =
+                    '<span class="lpc-badge" style="background:' + clr.bg
+                    + ';color:' + clr.text + ';">'
+                    + '<i class="bi ' + meta.icon + '"></i> ' + meta.label + '</span>';
+
+                const licBadgeHtml = badgeLabel
+                    ? '<span class="lpc-badge" style="background:#fce7f3;color:#db2777;">'
+                      + badgeLabel + '</span>'
+                    : '';
+
+                const yearHtml = year
+                    ? '<span style="font-size:.67rem;color:#64748b;">ปีงบประมาณ ' + year + '</span>'
+                    : '';
+
+                /* ── button ── */
+                const btnHtml =
+                    '<a href="' + detUrl + '" class="lpc-btn"'
+                    + ' style="background:' + clr.bg + ';color:' + clr.text + ';">'
+                    + '<i class="bi ' + detBtn.icon + '"></i>'
+                    + detBtn.label
+                    + '<i class="bi bi-arrow-right-short"></i></a>';
+
+                return '<div class="lpc-card">'
+                    + imgHtml
+                    + '<div class="lpc-body">'
+                    +   '<div class="lpc-badges">' + typeBadgeHtml + licBadgeHtml + yearHtml + '</div>'
+                    +   '<div class="lpc-title">' + title + '</div>'
+                    +   tableHtml
+                    +   btnHtml
+                    + '</div>'
+                    + '</div>';
+
+            } catch (e) {
+                console.error('buildPopupCard error:', e);
+                return '<div style="padding:10px;font-family:Sarabun,sans-serif;min-width:140px;">'
+                     + (m.name_local || featName || 'แผนที่') + '</div>';
+            }
+        }
+
+        // ── GeoJSON / KML parser ─────────────────────────────
+        /**
+         * Parse raw geoJsonData (string or object) which may be:
+         *   - GeoJSON string / object
+         *   - KML string (starts with <kml or <?xml)
+         * Returns a valid GeoJSON FeatureCollection or null.
+         */
+        function parseGeoData(raw) {
+            if (!raw) return null;
+            try {
+                let str = (typeof raw === 'string') ? raw : JSON.stringify(raw);
+                str = str.trim();
+
+                // ── KML → GeoJSON via GeoJsonAdapter ──
+                if (str.startsWith('<') || str.includes('<kml') || str.includes('<Placemark')) {
+                    if (typeof geoJsonAdapter !== 'undefined') {
+                        return geoJsonAdapter.kmlToGeoJSON(str);
+                    }
+                    console.warn('geoJsonAdapter not loaded — cannot parse KML');
+                    return null;
+                }
+
+                // ── GeoJSON string ──
+                const parsed = JSON.parse(str);
+                // Accept FeatureCollection, Feature, or Geometry
+                if (parsed && (parsed.type === 'FeatureCollection' ||
+                               parsed.type === 'Feature' ||
+                               parsed.coordinates)) {
+                    return parsed;
+                }
+                return null;
+            } catch { return null; }
+        }
+
+        // ── GeoJSON layer style per type ─────────────────────
+        const GEO_STYLE = {
+            buildingControl: { color:'#1d4ed8', fillColor:'#3b82f6', weight:2, fillOpacity:.15 },
+            riskZone:        { color:'#dc2626', fillColor:'#ef4444', weight:2, fillOpacity:.15 },
+            zoningPlan:      { color:'#16a34a', fillColor:'#22c55e', weight:2, fillOpacity:.15 },
+            none:            { color:'#0f766e', fillColor:'#3eb39d', weight:2, fillOpacity:.15 },
+        };
+        const GEO_STYLE_ACTIVE = {
+            buildingControl: { color:'#1d4ed8', fillColor:'#3b82f6', weight:3, fillOpacity:.35 },
+            riskZone:        { color:'#dc2626', fillColor:'#ef4444', weight:3, fillOpacity:.35 },
+            zoningPlan:      { color:'#16a34a', fillColor:'#22c55e', weight:3, fillOpacity:.35 },
+            none:            { color:'#0f766e', fillColor:'#3eb39d', weight:3, fillOpacity:.35 },
+        };
+
+        function clearGeoLayers() {
+            Object.values(geoLayers).forEach(l => {
+                if (leafletMap.hasLayer(l)) leafletMap.removeLayer(l);
+            });
+            geoLayers = {};
+        }
+
+        // ── Date format ──────────────────────────────────────
+        function fmt(str) {
+            if (!str) return '–';
+            return new Date(str).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' });
+        }
+
+        // ── Leaflet init ─────────────────────────────────────
+        function initMap() {
+            leafletMap = L.map('mainMap', { zoomControl: false }).setView([15.87, 100.99], 6);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap', maxZoom: 19
+            }).addTo(leafletMap);
+            L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
+            clusterGroup    = L.markerClusterGroup({ maxClusterRadius: 50 });
+            geoLayerGroup   = L.layerGroup().addTo(leafletMap);  // GeoJSON / KML layers sit below markers
+            leafletMap.addLayer(clusterGroup);
+
+            document.getElementById('btnFitAll').onclick = fitAll;
+            document.getElementById('btnMyLoc').onclick = () =>
+                navigator.geolocation?.getCurrentPosition(p =>
+                    leafletMap.setView([p.coords.latitude, p.coords.longitude], 15));
+        }
+
+        function fitAll() {
+            const pts = filteredMaps.filter(m => m.latitude && m.longitude)
+                .map(m => [m.latitude, m.longitude]);
+            if (pts.length) leafletMap.fitBounds(L.latLngBounds(pts), { padding: [40, 40] });
+        }
+
+        // ── Build markers + GeoJSON/KML layers ───────────────
+        function buildMarkers(data) {
+            clusterGroup.clearLayers();
+            clearGeoLayers();
+            geoLayerGroup.clearLayers();
+            markerMap = {};
+
+            data.forEach(m => {
+                const type  = getType(m);
+                const color = markerColor(m);
+                const addr  = buildAddress(m);
+
+                // ── GeoJSON / KML overlay ──
+                const rawGeo = m.geoJsonData || geoLookup[m.id];
+                if (rawGeo) {
+                    const geoData = parseGeoData(rawGeo);
+                    if (geoData) {
+                        const style  = GEO_STYLE[type] || GEO_STYLE.none;
+                        const layer  = L.geoJSON(geoData, {
+                            style: () => ({ ...style }),
+                            pointToLayer: (_feat, latlng) =>
+                                L.circleMarker(latlng, {
+                                    radius: 6,
+                                    fillColor: style.fillColor,
+                                    color: style.color,
+                                    weight: 2,
+                                    fillOpacity: 0.7
+                                }),
+                            onEachFeature: (_feat, fl) => {
+                                const featName = _feat.properties?.name
+                                    || _feat.properties?.Name
+                                    || _feat.properties?.description
+                                    || null;
+                                fl.bindPopup(buildPopupCard(m, featName),
+                                    { maxWidth: 300, className: 'lpc' });
+
+                                // Hover highlight
+                                fl.on('mouseover', function () {
+                                    this.setStyle({ weight: 4, opacity: 1, fillOpacity: 0.45 });
+                                    if (this.bringToFront) this.bringToFront();
+                                });
+                                fl.on('mouseout', function () {
+                                    const isActive = activeId === m.id;
+                                    const s = isActive
+                                        ? (GEO_STYLE_ACTIVE[type] || GEO_STYLE_ACTIVE.none)
+                                        : (GEO_STYLE[type]        || GEO_STYLE.none);
+                                    this.setStyle(s);
+                                });
+
+                                fl.on('click', () => {
+                                    highlightCard(m.id);
+                                    scrollToCard(m.id);
+                                });
+                            }
+                        });
+                        layer.addTo(geoLayerGroup);
+                        geoLayers[m.id] = { layer, type };
+                    }
+                }
+
+                // ── Pin marker (only if has coords) ──
+                if (!m.latitude || !m.longitude) return;
+                const mk = L.marker([m.latitude, m.longitude], { icon: makeIcon(color) });
+
+                mk.bindPopup(buildPopupCard(m, null),
+                    { maxWidth: 300, className: 'lpc' });
+
+                mk.on('click', () => {
+                    highlightCard(m.id);
+                    scrollToCard(m.id);
+                });
+
+                clusterGroup.addLayer(mk);
+                markerMap[m.id] = { marker: mk, color };
+            });
+        }
+
+        // ── Card highlight & fly ─────────────────────────────
+        function highlightCard(id) {
+            // Reset previous
+            if (activeId) {
+                if (markerMap[activeId])
+                    markerMap[activeId].marker.setIcon(makeIcon(markerMap[activeId].color, false));
+                if (geoLayers[activeId]) {
+                    const t = geoLayers[activeId].type;
+                    geoLayers[activeId].layer.setStyle(GEO_STYLE[t] || GEO_STYLE.none);
+                }
+            }
+            activeId = id;
+            document.querySelectorAll('.map-item-card').forEach(c => c.classList.remove('active'));
+            document.getElementById(`card-${id}`)?.classList.add('active');
+
+            // Activate new
+            if (markerMap[id])
+                markerMap[id].marker.setIcon(makeIcon(markerMap[id].color, true));
+            if (geoLayers[id]) {
+                const t = geoLayers[id].type;
+                geoLayers[id].layer.setStyle(GEO_STYLE_ACTIVE[t] || GEO_STYLE_ACTIVE.none);
+                // bring layer to front
+                geoLayers[id].layer.bringToFront();
+            }
+        }
+
+        /** Card click → fly to marker + open popup (no navigation) */
+        function onCardClick(id, lat, lng) {
+            highlightCard(id);
+            if (lat && lng) {
+                leafletMap.flyTo([lat, lng], 16, { duration: 0.8 });
+                setTimeout(() => markerMap[id]?.marker.openPopup(), 900);
+            }
+        }
+
+        function scrollToCard(id) {
+            document.getElementById(`card-${id}`)
+                ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // ── Skeleton ─────────────────────────────────────────
+        function renderSkeleton() {
+            document.getElementById('cardList').innerHTML =
+                Array(5).fill(`
+            <div class="sk-card">
+                <div class="skeleton sk-line" style="width:30%;"></div>
+                <div class="skeleton sk-line" style="width:70%;height:15px;margin-bottom:8px;"></div>
+                <div class="skeleton sk-line" style="width:90%;"></div>
+                <div class="skeleton sk-line" style="width:50%;"></div>
+                <div class="skeleton sk-line" style="width:40%;height:28px;border-radius:7px;margin-top:8px;"></div>
+            </div>`).join('');
+        }
+
+        // ── Render cards ─────────────────────────────────────
+        function renderCards(data) {
+            document.getElementById('statTotal').textContent = allMaps.length;
+            document.getElementById('statFiltered').textContent = data.length;
+
+            const list = document.getElementById('cardList');
+            if (!data.length) {
+                list.innerHTML = `
+                <div class="list-empty">
+                    <i class="bi bi-geo-alt"></i>
+                    <p class="mb-0">ไม่พบข้อมูลแผนที่</p>
+                    <small>ลองเปลี่ยนคำค้นหาหรือ filter</small>
+                </div>`;
+                return;
+            }
+
+            list.innerHTML = data.map(m => {
+                const addr = buildAddress(m);
+                const hasCoords = !!(m.latitude && m.longitude);
+                const lat = hasCoords ? Number(m.latitude).toFixed(5) : null;
+                const lng = hasCoords ? Number(m.longitude).toFixed(5) : null;
+                const latRaw = hasCoords ? m.latitude : 0;
+                const lngRaw = hasCoords ? m.longitude : 0;
+
+                /* related sub-info line */
+                let subLine = '';
+                if (m.buildingControl?.building_type)
+                    subLine = `<i class="bi bi-building me-1 text-primary"></i>${m.buildingControl.building_type}`;
+                else if (m.riskZone?.zoneType)
+                    subLine = `<i class="bi bi-exclamation-triangle me-1 text-danger"></i>${m.riskZone.zoneType}`;
+                else if (m.zoningPlan?.areaName)
+                    subLine = `<i class="bi bi-layers me-1 text-success"></i>${m.zoningPlan.areaName}`;
+
+                /* detail button */
+                const { cls, icon, label } = getDetailBtn(m);
+                const detailUrl = getDetailUrl(m);
+
+                return `
+            <div class="map-item-card"
+                 id="card-${m.id}"
+                 onclick="onCardClick(${m.id}, ${latRaw}, ${lngRaw})"
+                 title="คลิกเพื่อดูตำแหน่งบนแผนที่">
+
+                <div class="card-id"># ${m.id}</div>
+                <div class="card-title">${m.name_local || 'ไม่มีชื่อสถานที่'}</div>
+
+                <div class="card-address">
+                    <i class="bi bi-geo-alt-fill me-1" style="color:#3eb39d;font-size:.74rem;"></i>${addr}
+                </div>
+
+                ${subLine
+                        ? `<div style="font-size:.74rem;color:#64748b;margin-top:3px;">${subLine}</div>`
+                        : ''}
+
+                <div class="d-flex align-items-center justify-content-between mt-2 flex-wrap gap-1">
+                    <div>${typeBadge(m)}</div>
+                    ${hasCoords
+                        ? `<span class="card-coords"><i class="bi bi-pin-map me-1"></i>${lat}, ${lng}</span>`
+                        : `<span class="card-coords" style="color:#f59e0b;">
+                               <i class="bi bi-question-circle me-1"></i>ไม่มีพิกัด
+                           </span>`
+                    }
+                </div>
+
+                <div style="font-size:.68rem;color:#94a3b8;margin-top:3px;">
+                    <i class="bi bi-clock me-1"></i>${fmt(m.createdAt)}
+                </div>
+
+                <!-- ── ปุ่มดูรายละเอียด ── -->
+                <a  href="${detailUrl}"
+                    class="btn-detail ${cls}"
+                    onclick="event.stopPropagation()"
+                    title="${label}">
+                    <i class="bi ${icon}"></i>${label}
+                    <i class="bi bi-arrow-right-short"></i>
+                </a>
+            </div>`;
+            }).join('');
+
+            /* hover → pulse marker */
+            data.forEach(m => {
+                const card = document.getElementById(`card-${m.id}`);
+                if (!card) return;
+                card.addEventListener('mouseenter', () => {
+                    if (activeId !== m.id && markerMap[m.id])
+                        markerMap[m.id].marker.setIcon(makeIcon(markerMap[m.id].color, true));
+                });
+                card.addEventListener('mouseleave', () => {
+                    if (activeId !== m.id && markerMap[m.id])
+                        markerMap[m.id].marker.setIcon(makeIcon(markerMap[m.id].color, false));
+                });
+            });
+        }
+
+        // ── Filter & search ──────────────────────────────────
+        function applyFilter() {
+            const q = document.getElementById('searchInput').value.toLowerCase().trim();
+            filteredMaps = allMaps.filter(m => {
+                const name = (m.name_local || '').toLowerCase();
+                const addr = buildAddress(m).toLowerCase();
+                return (!q || name.includes(q) || addr.includes(q)) &&
+                    (curFilter === 'all' || getType(m) === curFilter);
+            });
+            renderCards(filteredMaps);
+            buildMarkers(filteredMaps);
+        }
+
+        let st;
+        document.getElementById('searchInput').addEventListener('input', () => {
+            clearTimeout(st); st = setTimeout(applyFilter, 260);
+        });
+
+        document.querySelectorAll('.filter-pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                curFilter = btn.dataset.filter;
+                stylePills();
+                applyFilter();
+            });
+        });
+
+        // ── Load data ────────────────────────────────────────
+        async function loadData() {
+            renderSkeleton();
+
+            // Fetch both endpoints in parallel:
+            //   /api/maps/local  → rich card data (address, relations)
+            //   /api/maps/filter → geoJsonData per mapId
+            const [localRes, filterRes] = await Promise.allSettled([
+                fetch('/api/maps/local').then(r => r.json()),
+                fetch('/api/maps/filter').then(r => r.json()),
+            ]);
+
+            // ── Build geoLookup from /filter ──
+            geoLookup = {};
+            if (filterRes.status === 'fulfilled' && filterRes.value?.success) {
+                const fv = filterRes.value;
+                // markers + all layer arrays
+                const allItems = [
+                    ...(fv.markers || []),
+                    ...(fv.layers?.riskZone        || []),
+                    ...(fv.layers?.zoningPlan       || []),
+                    ...(fv.layers?.planProject      || []),
+                    ...(fv.layers?.approvedProject  || []),
+                    ...(fv.layers?.buildPlan        || []),
+                ];
+                allItems.forEach(item => {
+                    if (item.mapId && item.geoJsonData) {
+                        geoLookup[item.mapId] = item.geoJsonData;
+                    }
+                });
+            }
+
+            // ── Load card list ──
+            if (localRes.status === 'fulfilled' && localRes.value?.success) {
+                allMaps = localRes.value.data || [];
+            } else {
+                // Fallback: AdminJS list
+                try {
+                    const r = await apiClient.list('Map', { perPage: 200 });
+                    allMaps = (r.records || []).map(rec => ({
+                        id:          rec.id,
+                        name_local:  rec.name_local,
+                        house_no:    rec.house_no,
+                        village_no:  rec.village_no,
+                        soi:         rec.soi,
+                        road:        rec.road,
+                        subdistrict: rec.subdistrict,
+                        district:    rec.district,
+                        province:    rec.province,
+                        latitude:    rec.lat  || rec.latitude,
+                        longitude:   rec.lng  || rec.longitude,
+                        createdAt:   rec.createdAt,
+                    }));
+                } catch { allMaps = []; }
+            }
+
+            filteredMaps = [...allMaps];
+            renderCards(filteredMaps);
+            buildMarkers(filteredMaps);
+            if (filteredMaps.length) fitAll();
+        }
+
+        // ── Init ─────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', async () => {
+            loadComponents();
+            initMap();
+            stylePills();
+            await loadData();
+            document.getElementById('loadingOverlay').style.display = 'none';
+        });
     </script>
 </body>
 

@@ -1,0 +1,27 @@
+{
+  "name": "กองช่าง เทศบาลนครตรัง",
+  "short_name": "กองช่าง",
+  "description": "แผนที่และข้อมูลกองช่าง เทศบาลนครตรัง",
+  "start_url": "/map/",
+  "scope": "/map/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#880e4f",
+  "theme_color": "#880e4f",
+  "lang": "th",
+  "icons": [
+    {
+      "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Seal_Trang.png/192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Seal_Trang.png/512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["government", "maps"]
+}

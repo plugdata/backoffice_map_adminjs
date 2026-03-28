@@ -239,3 +239,16 @@ model BuildPlan {
   created_at   DateTime   @default(now())
   updated_at   DateTime   @updatedAt
 }
+
+model Visitor {
+  id        String   @id @default(uuid())
+  visitorId String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VisitLog {
+  id        String   @id @default(uuid())
+  visitorId String
+  createdAt DateTime @default(now())
+}

@@ -3,10 +3,21 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>กองช่าง เทศบาลนครตรัง</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#880e4f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="กองช่าง" />
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 
@@ -49,15 +60,15 @@
     <!-- Spacer -->
     <div style="flex:1;"></div>
 
-    <!-- Stats -->
+    <!-- Stats (อัพเดตจาก API) -->
     <div class="nav-stat">
       <div class="nav-stat-label">ผู้เข้าชมสัปดาห์</div>
-      <div class="nav-stat-val">1,284</div>
+      <div class="nav-stat-val" id="stat-weekly">—</div>
     </div>
     <div class="nav-sep"></div>
     <div class="nav-stat">
       <div class="nav-stat-label">ผู้เข้าชมทั้งหมด</div>
-      <div class="nav-stat-val">38,920</div>
+      <div class="nav-stat-val" id="stat-total">—</div>
     </div>
     <div class="nav-sep"></div>
 
@@ -127,6 +138,9 @@
 
     </div><!-- /#panel -->
 
+    <!-- Mobile backdrop (tap to close panel) -->
+    <div id="panel-backdrop"></div>
+
     <!-- MAP -->
     <div id="map-pane">
       <div id="map"></div>
@@ -168,23 +182,23 @@
               <label for="layer-building">🏠 งานควบคุมอาคาร (Marker)</label>
             </div>
             <div class="data-layer-item">
-              <input type="checkbox" id="layer-public">
+              <input type="checkbox" id="layer-public" checked>
               <label for="layer-public">📜 งานระวางสาธารณะ (KML)</label>
             </div>
             <div class="data-layer-item">
-              <input type="checkbox" id="layer-project">
+              <input type="checkbox" id="layer-project" checked>
               <label for="layer-project">🗺️ แผนที่โครงการ (KML)</label>
             </div>
             <div class="data-layer-item">
-              <input type="checkbox" id="layer-approved">
+              <input type="checkbox" id="layer-approved" checked>
               <label for="layer-approved">✅ โครงการที่อนุมัติ (KML)</label>
             </div>
             <div class="data-layer-item">
-              <input type="checkbox" id="layer-heritage">
+              <input type="checkbox" id="layer-heritage" checked>
               <label for="layer-heritage">🏛️ อาคารทรงคุณค่า (KML)</label>
             </div>
             <div class="data-layer-item">
-              <input type="checkbox" id="layer-planning">
+              <input type="checkbox" id="layer-planning" checked>
               <label for="layer-planning">🏙️ งานผังเมือง (KML/Marker)</label>
             </div>
           </div>
@@ -215,6 +229,7 @@
 ════════════════════════════════════════ -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script>
     /* ════════════════════════════════════════
        DATA  (filled from API)
@@ -540,14 +555,25 @@
 
     const map = L.map('map', { zoomControl: true, layers: [baseMaps.street] }).setView([7.5565, 99.6114], 14)
 
-    // Data Layers (Overlay Groups)
+    // Data Layers — building ใช้ MarkerCluster, KML ทุก layer เริ่มต้น addTo(map)
     const layers = {
-      building: L.layerGroup().addTo(map),
-      public: L.layerGroup(),
-      project: L.layerGroup(),
-      approved: L.layerGroup(),
-      heritage: L.layerGroup(),
-      planning: L.layerGroup()
+      building: L.markerClusterGroup({
+        chunkedLoading: true,
+        maxClusterRadius: 60,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        iconCreateFunction: cluster => L.divIcon({
+          html: `<div style="background:var(--pink-700);color:#fff;border-radius:50%;width:36px;height:36px;
+                 display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;
+                 border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);">${cluster.getChildCount()}</div>`,
+          className: '', iconSize: [36, 36]
+        })
+      }).addTo(map),
+      public:    L.layerGroup().addTo(map),
+      project:   L.layerGroup().addTo(map),
+      approved:  L.layerGroup().addTo(map),
+      heritage:  L.layerGroup().addTo(map),
+      planning:  L.layerGroup().addTo(map)
     }
 
     // Mock GeoJSON/KML Data Placeholder
@@ -599,34 +625,46 @@
       }
     }
 
+    // helper: สร้าง loc จาก GeoJSON feature properties สำหรับ mock data
+    function locFromFeature(f, defaultType) {
+      const p = f.properties || {}
+      return {
+        id: 0, name: p.name || 'ไม่ระบุชื่อ',
+        type: p.type || defaultType, year: p.year || '',
+        address: p.address || '', house_no: '',
+        desc: p.description || '', image: '', images: [],
+        programs: [], entityRows: Object.entries(p)
+          .filter(([k]) => !['name','color','type','year','address','description'].includes(k))
+          .map(([k, v]) => ({ label: k, value: String(v) }))
+      }
+    }
+
     function initDataLayers() {
-      // Planning KML
-      L.geoJSON(MOCK_KML.planning, {
-        style: (f) => ({ color: f.properties.color, weight: 2, fillOpacity: 0.1 })
-      }).addTo(layers.planning)
+      const geoOpts = (styleColor, type) => ({
+        style: f => ({ color: f.properties?.color || styleColor, weight: 2.5, fillOpacity: 0.15 }),
+        onEachFeature: (f, layer) => layer.bindPopup(
+          () => buildPopup(locFromFeature(f, type)),
+          { maxWidth: 320, minWidth: 280, className: 'detail-popup' }
+        )
+      })
 
-      // Heritage KML
-      L.geoJSON(MOCK_KML.heritage, {
-        style: (f) => ({ color: f.properties.color, weight: 2, fillOpacity: 0.15, dashArray: '5, 5' })
-      }).addTo(layers.heritage)
+      L.geoJSON(MOCK_KML.planning,  { ...geoOpts('#ec407a','งานผังเมือง'),
+        style: f => ({ ...geoOpts('#ec407a').style(f), dashArray: '4,4' }) }).addTo(layers.planning)
+      L.geoJSON(MOCK_KML.heritage,  geoOpts('#ad1457','อาคารทรงคุณค่า')).addTo(layers.heritage)
+      L.geoJSON(MOCK_KML.public,    { ...geoOpts('#0284c7','งานสาธารณะ'),
+        style: f => ({ color: f.properties?.color || '#0284c7', weight: 3, fillOpacity: 0.2 }) }).addTo(layers.public)
+      L.geoJSON(MOCK_KML.approved,  geoOpts('#ca8a04','โครงการอนุมัติ')).addTo(layers.approved)
 
-      // Public Land KML
-      L.geoJSON(MOCK_KML.public, {
-        style: (f) => ({ color: f.properties.color, weight: 3, fillOpacity: 0.2 })
-      }).addTo(layers.public)
-
-      // Approved Projects KML
-      L.geoJSON(MOCK_KML.approved, {
-        style: (f) => ({ color: f.properties.color, weight: 2, fillOpacity: 0.3 })
-      }).addTo(layers.approved)
-
-      // Project Map Marker
+      // Project / Planning markers (mock)
       L.marker([7.5580, 99.615], { icon: makeMarker('#16a34a') })
-        .bindPopup('<b>แผนที่โครงการ</b><br>แนวเขตเวนคืนถนนใหม่').addTo(layers.project)
+        .bindPopup(() => buildPopup({ id:0, name:'แผนที่โครงการ', type:'ก่อสร้าง', year:'', address:'แนวเขตเวนคืนถนนใหม่', house_no:'', desc:'', image:'', images:[], programs:[], entityRows:[] }),
+          { maxWidth: 320, minWidth: 280, className: 'detail-popup' })
+        .addTo(layers.project)
 
-      // Planning Markers
       L.marker([7.5535, 99.608], { icon: makeMarker('#ec407a') })
-        .bindPopup('<b>งานผังเมือง</b><br>จุดตรวจสอบระยะถอยร่น').addTo(layers.planning)
+        .bindPopup(() => buildPopup({ id:0, name:'งานผังเมือง', type:'งานผังเมือง', year:'', address:'จุดตรวจสอบระยะถอยร่น', house_no:'', desc:'', image:'', images:[], programs:[], entityRows:[] }),
+          { maxWidth: 320, minWidth: 280, className: 'detail-popup' })
+        .addTo(layers.planning)
     }
     initDataLayers()
 
@@ -668,39 +706,65 @@
       Object.values(API_LAYER_MAP).forEach(({ group }) => group.clearLayers())
       Object.keys(kmlLayerRefs).forEach(k => delete kmlLayerRefs[k])
 
+      // สร้าง queue แบน สำหรับ lazy load ทีละ chunk
+      const queue = []
       Object.entries(API_LAYER_MAP).forEach(([type, { group, color }]) => {
-        const items = apiLayers[type] || []
-        items.forEach(item => {
-          const rel = item[type]
-          const label = item.name_local || rel?.zoneType || rel?.areaName || rel?.name || rel?.title_project || rel?.areabuild || type
-          const popupHtml = `<b>${label}</b>${item.address ? '<br>' + item.address : ''}`
-
-          if (item.geoJsonData) {
-            try {
-              const clean = sanitizeGeoJSON(item.geoJsonData)
-              if (!clean) return
-              const geoLayer = L.geoJSON(clean, {
-                style: () => ({ color, weight: 2, fillOpacity: 0.2 }),
-                pointToLayer: (f, latlng) => {
-                  if (!latlng || latlng.lat == null || latlng.lng == null) return null
-                  return L.marker(latlng, { icon: makeMarker(color) })
-                },
-                onEachFeature: (f, layer) => {
-                  layer.bindPopup(f.properties?.name ? `<b>${f.properties.name}</b>` : popupHtml)
-                }
-              }).addTo(group)
-              kmlLayerRefs[item.mapId] = geoLayer   // เก็บ ref สำหรับ flyTo
-            } catch (e) {
-              console.warn('Invalid geoJsonData for', type, e)
-            }
-          } else if (validCoord(item.latitude, item.longitude)) {
-            const pin = L.marker([item.latitude, item.longitude], { icon: makeMarker(color) })
-              .bindPopup(popupHtml)
-              .addTo(group)
-            kmlLayerRefs[item.mapId] = { eachLayer: cb => cb(pin) }
-          }
-        })
+        ;(apiLayers[type] || []).forEach(item => queue.push({ group, color, item }))
       })
+
+      const CHUNK = 12   // items ต่อ idle frame
+      let idx = 0
+
+      function processOne({ group, color, item }) {
+        const loc = apiItemToLoc(item)
+        if (item.geoJsonData) {
+          try {
+            const clean = sanitizeGeoJSON(item.geoJsonData)
+            if (!clean) return
+            const geoLayer = L.geoJSON(clean, {
+              style: () => ({ color, weight: 2.5, fillOpacity: 0.2 }),
+              pointToLayer: (f, latlng) => {
+                if (!latlng || latlng.lat == null || latlng.lng == null) return null
+                return L.marker(latlng, { icon: makeMarker(color) })
+              },
+              onEachFeature: (f, layer) => {
+                // รวม properties จาก GeoJSON เข้ากับ entityRows ของ loc
+                const extraRows = Object.entries(f.properties || {})
+                  .filter(([k]) => !['name','color','type','style'].includes(k))
+                  .map(([k, v]) => ({ label: k, value: String(v) }))
+                const featLoc = {
+                  ...loc,
+                  name: f.properties?.name || loc.name,
+                  entityRows: [...(loc.entityRows || []), ...extraRows]
+                }
+                layer.bindPopup(() => buildPopup(featLoc), {
+                  maxWidth: 320, minWidth: 280, className: 'detail-popup'
+                })
+              }
+            }).addTo(group)
+            kmlLayerRefs[item.mapId] = geoLayer
+          } catch (e) {
+            console.warn('Invalid geoJsonData', e)
+          }
+        } else if (validCoord(item.latitude, item.longitude)) {
+          const pin = L.marker([item.latitude, item.longitude], { icon: makeMarker(color) })
+            .bindPopup(() => buildPopup(loc), { maxWidth: 320, minWidth: 280, className: 'detail-popup' })
+            .addTo(group)
+          kmlLayerRefs[item.mapId] = { eachLayer: cb => cb(pin) }
+        }
+      }
+
+      function processChunk() {
+        const end = Math.min(idx + CHUNK, queue.length)
+        for (; idx < end; idx++) processOne(queue[idx])
+        if (idx < queue.length) {
+          typeof requestIdleCallback !== 'undefined'
+            ? requestIdleCallback(processChunk, { timeout: 800 })
+            : setTimeout(processChunk, 16)
+        }
+      }
+
+      processChunk()
     }
 
     // Layer Control UI Logic
@@ -899,11 +963,21 @@
       const edgeIcon = document.getElementById('edge-icon')
       edgeIcon.querySelector('path').setAttribute('d',
         state.panelOpen ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6')
+      // show/hide mobile backdrop
+      const backdrop = document.getElementById('panel-backdrop')
+      if (backdrop) backdrop.style.display = (state.panelOpen && window.innerWidth <= 768) ? 'block' : 'none'
       // refresh map size
       setTimeout(() => map.invalidateSize(), 260)
     }
     document.getElementById('panel-toggle').addEventListener('click', () => togglePanel())
     document.getElementById('panel-edge-btn').addEventListener('click', () => togglePanel())
+    document.getElementById('panel-backdrop').addEventListener('click', () => togglePanel(false))
+
+    // On mobile: start with panel closed so map is fully accessible
+    if (window.innerWidth <= 768) {
+      state.panelOpen = false
+      document.getElementById('panel').classList.add('collapsed')
+    }
 
     /* ════════════════════════════════════════
        SEARCH & FILTER EVENTS
@@ -944,18 +1018,89 @@
        COOKIE BANNER
     ════════════════════════════════════════ */
     const cookieBanner = document.getElementById('cookie-banner')
-    setTimeout(() => cookieBanner.classList.remove('d-none'), 1200)
-    function hideCookie() {
+    if (!localStorage.getItem('cookie-consent')) {
+      setTimeout(() => cookieBanner.classList.remove('d-none'), 1200)
+    }
+    function hideCookie(accepted) {
+      localStorage.setItem('cookie-consent', accepted ? 'accepted' : 'declined')
       cookieBanner.classList.add('hide')
       setTimeout(() => cookieBanner.remove(), 320)
     }
-    document.getElementById('cookie-accept').addEventListener('click', hideCookie)
-    document.getElementById('cookie-decline').addEventListener('click', hideCookie)
+    document.getElementById('cookie-accept').addEventListener('click', () => hideCookie(true))
+    document.getElementById('cookie-decline').addEventListener('click', () => hideCookie(false))
 
     /* ════════════════════════════════════════
        INIT — โหลดข้อมูลจาก API
     ════════════════════════════════════════ */
     fetchMapData('')
+
+    /* ════════════════════════════════════════
+       VISITOR TRACKING
+       - ใช้ localStorage เก็บ UUID ของผู้เข้าชม
+       - cooldown 30 นาที ป้องกัน log ซ้ำบน refresh
+       - อัพเดต nav-stat ทุกครั้งที่โหลดหน้า
+    ════════════════════════════════════════ */
+    ;(function initVisitorTracking() {
+      const STORAGE_KEY   = 'trang_visitor_id'
+      const LAST_VISIT_KEY = 'trang_last_visit'
+      const COOLDOWN_MS   = 30 * 60 * 1000   // 30 นาที
+
+      // สร้าง UUID v4 สำหรับ visitor ใหม่
+      function genUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+          const r = Math.random() * 16 | 0
+          return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+        })
+      }
+
+      // ดึง / สร้าง visitorId จาก localStorage
+      let visitorId = localStorage.getItem(STORAGE_KEY)
+      if (!visitorId) {
+        visitorId = genUUID()
+        localStorage.setItem(STORAGE_KEY, visitorId)
+      }
+
+      // ส่ง track เฉพาะเมื่อพ้น cooldown (ป้องกัน log ซ้ำ)
+      const lastVisit = Number(localStorage.getItem(LAST_VISIT_KEY) || 0)
+      if (Date.now() - lastVisit > COOLDOWN_MS) {
+        localStorage.setItem(LAST_VISIT_KEY, Date.now())
+        fetch('/api/visitor/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visitorId })
+        }).catch(() => {})   // silent fail — ไม่กระทบ UX
+      }
+
+      // โหลด stats แสดงใน navbar
+      function loadStats() {
+        fetch('/api/visitor/stats')
+          .then(r => r.json())
+          .then(data => {
+            if (!data.success) return
+            const fmt = n => n >= 1000
+              ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K'
+              : String(n)
+            const weekly = document.getElementById('stat-weekly')
+            const total  = document.getElementById('stat-total')
+            if (weekly) weekly.textContent = fmt(data.weekly)
+            if (total)  total.textContent  = fmt(data.total)
+          })
+          .catch(() => {})
+      }
+
+      loadStats()
+    })()
+  </script>
+
+  <!-- PWA Service Worker (production only) -->
+  <script>
+    if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js', { scope: '/map/' })
+          .then(reg => console.log('SW registered:', reg.scope))
+          .catch(err => console.warn('SW registration failed:', err))
+      })
+    }
   </script>
 </body>
 
