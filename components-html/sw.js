@@ -1,8 +1,11 @@
-const CACHE = 'กองชาง-v1'
+const CACHE = 'กองชาง-v19'
 
+// precache เฉพาะหน้าแรกเท่านั้น — ไฟล์ CSS/JS ใน production build มี hash ต่อท้ายชื่อ
+// (/map/assets/index-xxxx.css) จึงระบุล่วงหน้าไม่ได้ ถ้าใส่ชื่อผิด addAll จะ reject
+// แล้ว service worker ติดตั้งไม่สำเร็จทั้งตัว — ปล่อยให้ fetch handler ด้านล่าง
+// (cache-first) เก็บเข้า cache เองตอนโหลดครั้งแรก
 const STATIC = [
   '/map/',
-  '/map/styles.css',
 ]
 
 // Install — cache static shell

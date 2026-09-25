@@ -287,6 +287,28 @@ const initializeApp = async () => {
       res.sendFile(path.join(__dirname, 'frontend/pages/login.html'));
     });
 
+    // 🔧 Fix: normalize recordIds for AdminJS bulk actions (bulkDelete ฯลฯ)
+    // frontend บางที่ส่ง recordIds เป็น array (recordIds=1&recordIds=2 หรือ recordIds[]=..)
+    // AdminJS ทำ recordIds.split() กับ array ไม่ได้ -> 500 ; รวมเป็น comma string ก่อน
+    // NOTE: Express 4 ตั้ง req.query เป็น plain object ครั้งเดียว (ไม่ re-parse จาก req.url)
+    //       จึงต้อง mutate req.query.recordIds ตรง ๆ (แก้ req.url ไม่มีผล)
+    app.use((req, res, next) => {
+      try {
+        const q = req.query || {}
+        let val = q.recordIds
+        if (val === undefined && Array.isArray(q['recordIds[]'])) {
+          val = q['recordIds[]']
+          delete q['recordIds[]']
+        }
+        if (Array.isArray(val)) {
+          q.recordIds = val.filter(v => v !== null && v !== undefined && v !== '').join(',')
+        }
+      } catch (e) {
+        console.error('recordIds normalize error:', e)
+      }
+      next()
+    })
+
     app.use(admin.options.rootPath, adminRouter)
 
     // ปิด admin.watch() เนื่องจากใช้ API Mode

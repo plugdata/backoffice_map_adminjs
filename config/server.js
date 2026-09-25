@@ -20,6 +20,10 @@ const __dirname = path.dirname(__filename)
 export const createExpressApp = () => {
   const app = express()
 
+  // เชื่อถือ header X-Forwarded-Proto จาก reverse proxy/tunnel (Cloudflare, nginx ฯลฯ)
+  // จำเป็นสำหรับให้ secure cookie ทำงานถูกต้องเมื่อ TLS ถูก terminate ก่อนถึง Node
+  app.set('trust proxy', 1)
+
   // Middleware
   app.use(express.json({ limit: '50mb' }))
   app.use(express.urlencoded({ extended: true, limit: '50mb' }))
@@ -32,7 +36,7 @@ export const createExpressApp = () => {
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     }
   }))

@@ -15,6 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="กองช่าง" />
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="/map/vendor/bootstrap-icons/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -22,6 +23,17 @@
 </head>
 
 <body>
+  <!-- Loading overlay (แสดงตอนกำลังโหลดข้อมูลแผนที่) -->
+  <div id="map-loading" class="d-none">
+    <div class="map-loading-box">
+      <img class="map-loading-logo"
+        src="/map/logo.png"
+        alt="ตราสัญลักษณ์เทศบาลนครตรัง"
+        onerror="this.style.display='none'" />
+      <div class="map-loading-spinner"></div>
+      <p>กำลังโหลดข้อมูลแผนที่…</p>
+    </div>
+  </div>
 
   <!-- ════════════════════════════════════════
      NAVBAR
@@ -30,15 +42,13 @@
 
     <!-- Panel toggle (hamburger) -->
     <button id="panel-toggle" title="เปิด/ปิดรายการ">
-      <svg id="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-      </svg>
+      <i id="hamburger-icon" class="bi bi-list" aria-hidden="true"></i>
     </button>
 
     <!-- Brand -->
     <a class="brand" href="#">
       <div class="brand-logo">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Seal_Trang.png/240px-Seal_Trang.png"
+        <img src="/map/logo.png"
           alt="ตราสัญลักษณ์" onerror="this.style.display='none';this.parentElement.innerHTML='🏛️'" />
       </div>
       <div>
@@ -48,13 +58,13 @@
     </a>
 
     <!-- Search -->
-    <div id="nav-search-wrap">
-      <svg class="nav-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2">
-        <circle cx="11" cy="11" r="8" />
-        <path d="m21 21-4.3-4.3" />
-      </svg>
-      <input id="nav-search" type="text" placeholder="ค้นหาสถานที่หรือโครงการ..." />
+    <div id="nav-search-wrap" role="search">
+      <i class="bi bi-search nav-search-icon" aria-hidden="true"></i>
+      <input id="nav-search" type="text" placeholder="ค้นหาสถานที่หรือโครงการ..." autocomplete="off" spellcheck="false" aria-label="ค้นหา" />
+      <span class="nav-search-shortcut" aria-hidden="true">Ctrl K</span>
+      <button id="nav-search-clear" class="nav-search-clear d-none" type="button" title="ล้างคำค้นหา" aria-label="ล้างคำค้นหา">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
     </div>
 
     <!-- Spacer -->
@@ -85,7 +95,10 @@
 
       <!-- Filter section -->
       <div id="filter-section">
-        <div class="filter-title">🔍 ค้นหาและกรองข้อมูล</div>
+        <div class="filter-title">
+          <i class="bi bi-funnel filter-title-icon" aria-hidden="true"></i>
+          <span>ค้นหาและกรองข้อมูล</span>
+        </div>
 
         <!-- Active filter chips -->
         <div id="filter-chips"></div>
@@ -93,13 +106,13 @@
         <!-- Filter controls row 1 -->
         <div class="filter-row">
           <select id="sel-type" title="ประเภทเอกสาร">
-            <option value="">📋 ทุกประเภท</option>
-            <option value="งานสาธารณะ">🔧 งานสาธารณะ</option>
-            <option value="ใบอนุญาต">📄 ใบอนุญาต</option>
-            <option value="งานผังเมือง">🗺️ งานผังเมือง</option>
+            <option value="">ทุกประเภท</option>
+            <option value="งานสาธารณะ">งานสาธารณะ</option>
+            <option value="ใบอนุญาต">ใบอนุญาต</option>
+            <option value="งานผังเมือง">งานผังเมือง</option>
           </select>
           <select id="sel-year" title="ปีงบประมาณ">
-            <option value="">📅 ทุกปี</option>
+            <option value="">ทุกปี</option>
             <option value="2567">ปีงบ 2567</option>
             <option value="2566">ปีงบ 2566</option>
             <option value="2565">ปีงบ 2565</option>
@@ -109,7 +122,7 @@
         <!-- Filter controls row 2 -->
         <div class="filter-row">
           <select id="sel-program" title="โปรแกรม/งาน">
-            <option value="">🏗️ ทุกโครงการ</option>
+            <option value="">ทุกโครงการ</option>
             <option value="ก่อสร้าง">ก่อสร้าง</option>
             <option value="ใบอนุญาต">ใบอนุญาต</option>
             <option value="ผังเมือง">ผังเมือง</option>
@@ -124,7 +137,10 @@
         </div>
 
         <!-- Clear all -->
-        <button id="btn-clear-all" class="btn-clear-all d-none">✕ ล้างตัวกรองทั้งหมด</button>
+        <button id="btn-clear-all" class="btn-clear-all d-none" type="button">
+          <i class="bi bi-trash3" aria-hidden="true"></i>
+          <span>ล้างตัวกรองทั้งหมด</span>
+        </button>
       </div>
 
       <!-- Results header -->
@@ -147,17 +163,13 @@
 
       <!-- Panel collapse/expand arrow on map edge -->
       <button id="panel-edge-btn" title="ซ่อน/แสดงรายการ">
-        <svg id="edge-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 18l-6-6 6-6" />
-        </svg>
+        <i id="edge-icon" class="bi bi-chevron-left" aria-hidden="true"></i>
       </button>
 
       <!-- Map Layer Controls (Custom) -->
       <div id="layer-control-wrap">
         <button id="layer-toggle-btn" title="ชั้นข้อมูลแผนที่">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7l10 5l10-5l-10-5zM2 17l10 5l10-5M2 12l10 5l10-5" />
-          </svg>
+          <i class="bi bi-layers" aria-hidden="true"></i>
         </button>
 
         <div id="layer-panel" class="layer-panel-hidden">
@@ -179,27 +191,27 @@
             <div class="layer-section-title">ชั้นข้อมูลเพิ่มเติม</div>
             <div class="data-layer-item">
               <input type="checkbox" id="layer-building" checked>
-              <label for="layer-building">🏠 งานควบคุมอาคาร (Marker)</label>
+              <label for="layer-building"><span class="layer-color-dot" style="--layer-color:#ec407a"></span>งานควบคุมอาคาร (Marker)</label>
             </div>
             <div class="data-layer-item">
               <input type="checkbox" id="layer-public" checked>
-              <label for="layer-public">📜 งานระวางสาธารณะ (KML)</label>
+              <label for="layer-public"><span class="layer-color-dot" style="--layer-color:#0284c7"></span>งานระวางสาธารณะ (KML)</label>
             </div>
             <div class="data-layer-item">
               <input type="checkbox" id="layer-project" checked>
-              <label for="layer-project">🗺️ แผนที่โครงการ (KML)</label>
+              <label for="layer-project"><span class="layer-color-dot" style="--layer-color:#16a34a"></span>แผนที่โครงการ (KML)</label>
             </div>
             <div class="data-layer-item">
               <input type="checkbox" id="layer-approved" checked>
-              <label for="layer-approved">✅ โครงการที่อนุมัติ (KML)</label>
+              <label for="layer-approved"><span class="layer-color-dot" style="--layer-color:#ca8a04"></span>โครงการที่อนุมัติ (KML)</label>
             </div>
             <div class="data-layer-item">
               <input type="checkbox" id="layer-heritage" checked>
-              <label for="layer-heritage">🏛️ อาคารทรงคุณค่า (KML)</label>
+              <label for="layer-heritage"><span class="layer-color-dot" style="--layer-color:#ad1457"></span>อาคารทรงคุณค่า (KML)</label>
             </div>
             <div class="data-layer-item">
               <input type="checkbox" id="layer-planning" checked>
-              <label for="layer-planning">🏙️ งานผังเมือง (KML/Marker)</label>
+              <label for="layer-planning"><span class="layer-color-dot" style="--layer-color:#7c3aed"></span>งานผังเมือง (KML/Marker)</label>
             </div>
           </div>
         </div>
@@ -240,12 +252,12 @@
     const kmlLayerRefs = {}     // mapId → L.geoJSON layer (for flyTo KML)
 
     const TYPE_COLOR = {
-      buildingControl: '#ec407a',
-      riskZone:        '#0284c7',
-      zoningPlan:      '#ec407a',
-      planProject:     '#16a34a',
-      approvedProject: '#ca8a04',
-      buildPlan:       '#ad1457'
+      buildingControl: '#ec407a', // ???????? / Marker
+      riskZone:        '#0284c7', // ?????????? / Polygon
+      zoningPlan:      '#7c3aed', // ??????????? / Polygon + Polyline
+      planProject:     '#16a34a', // ??????? / Polyline + Marker
+      approvedProject: '#ca8a04', // ?????????????? / Polygon
+      buildPlan:       '#ad1457'  // ?????????????? / Polygon
     }
 
     function isImageUrl(u) {
@@ -362,7 +374,17 @@
       }
     }
 
+    function showLoading() {
+      const el = document.getElementById('map-loading')
+      if (el) el.classList.remove('d-none')
+    }
+    function hideLoading() {
+      const el = document.getElementById('map-loading')
+      if (el) el.classList.add('d-none')
+    }
+
     async function fetchMapData(year) {
+      showLoading()
       try {
         const url = year ? `/api/maps/filter?year=${encodeURIComponent(year)}` : '/api/maps/filter'
         const res = await fetch(url)
@@ -381,6 +403,8 @@
       } catch (err) {
         console.error('fetchMapData error:', err)
         update()
+      } finally {
+        hideLoading()
       }
     }
 
@@ -402,15 +426,15 @@
        ICONS (inline SVG helpers)
     ════════════════════════════════════════ */
     const IC = {
-      pin: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
-      tel: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5 19.79 19.79 0 0 1 1.57 4.9 2 2 0 0 1 3.54 2.68h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.18a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
-      clk: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
-      star: `<svg width="13" height="13" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-      usr: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>`,
-      nav: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>`,
-      dl: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
-      cal: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-      mapPin: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`
+      pin: `<i class="bi bi-geo-alt card-inline-icon" aria-hidden="true"></i>`,
+      tel: `<i class="bi bi-telephone card-inline-icon" aria-hidden="true"></i>`,
+      clk: `<i class="bi bi-clock card-inline-icon" aria-hidden="true"></i>`,
+      star: `<i class="bi bi-star-fill card-inline-icon text-warning" aria-hidden="true"></i>`,
+      usr: `<i class="bi bi-person card-inline-icon" aria-hidden="true"></i>`,
+      nav: `<i class="bi bi-map card-inline-icon" aria-hidden="true"></i>`,
+      dl: `<i class="bi bi-download card-inline-icon" aria-hidden="true"></i>`,
+      cal: `<i class="bi bi-calendar3 card-inline-icon" aria-hidden="true"></i>`,
+      mapPin: `<i class="bi bi-geo-alt map-pin-placeholder" aria-hidden="true"></i>`
     }
     const PH = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='380' height='140'%3E%3Crect width='380' height='140' fill='%23fce4ec'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='48'%3E🏗️%3C/text%3E%3C/svg%3E`
 
@@ -469,7 +493,7 @@
     }
 
     function clearFilter(key) {
-      if (key === 'search') { state.search = ''; document.getElementById('nav-search').value = ''; }
+      if (key === 'search') { state.search = ''; document.getElementById('nav-search').value = ''; syncSearchUi(); }
       if (key === 'type') { state.type = ''; document.getElementById('sel-type').value = ''; }
       if (key === 'year') { state.year = ''; document.getElementById('sel-year').value = ''; }
       if (key === 'program') { state.program = ''; document.getElementById('sel-program').value = ''; }
@@ -545,8 +569,8 @@
     ════════════════════════════════════════ */
     // Base Layers
     const baseMaps = {
-      street: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      street: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
       }),
       sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EBP, and the GIS User Community'
@@ -641,7 +665,7 @@
 
     function initDataLayers() {
       const geoOpts = (styleColor, type) => ({
-        style: f => ({ color: f.properties?.color || styleColor, weight: 2.5, fillOpacity: 0.15 }),
+        style: f => ({ color: styleColor, fillColor: styleColor, weight: 2.5, fillOpacity: 0.15 }),
         onEachFeature: (f, layer) => layer.bindPopup(
           () => buildPopup(locFromFeature(f, type)),
           { maxWidth: 320, minWidth: 280, className: 'detail-popup' }
@@ -649,10 +673,10 @@
       })
 
       L.geoJSON(MOCK_KML.planning,  { ...geoOpts('#ec407a','งานผังเมือง'),
-        style: f => ({ ...geoOpts('#ec407a').style(f), dashArray: '4,4' }) }).addTo(layers.planning)
+        style: f => ({ ...geoOpts('#7c3aed').style(f), dashArray: '4,4' }) }).addTo(layers.planning)
       L.geoJSON(MOCK_KML.heritage,  geoOpts('#ad1457','อาคารทรงคุณค่า')).addTo(layers.heritage)
       L.geoJSON(MOCK_KML.public,    { ...geoOpts('#0284c7','งานสาธารณะ'),
-        style: f => ({ color: f.properties?.color || '#0284c7', weight: 3, fillOpacity: 0.2 }) }).addTo(layers.public)
+        style: f => ({ color: '#0284c7', fillColor: '#0284c7', weight: 3, fillOpacity: 0.2 }) }).addTo(layers.public)
       L.geoJSON(MOCK_KML.approved,  geoOpts('#ca8a04','โครงการอนุมัติ')).addTo(layers.approved)
 
       // Project / Planning markers (mock)
@@ -661,7 +685,7 @@
           { maxWidth: 320, minWidth: 280, className: 'detail-popup' })
         .addTo(layers.project)
 
-      L.marker([7.5535, 99.608], { icon: makeMarker('#ec407a') })
+      L.marker([7.5535, 99.608], { icon: makeMarker('#7c3aed') })
         .bindPopup(() => buildPopup({ id:0, name:'งานผังเมือง', type:'งานผังเมือง', year:'', address:'จุดตรวจสอบระยะถอยร่น', house_no:'', desc:'', image:'', images:[], programs:[], entityRows:[] }),
           { maxWidth: 320, minWidth: 280, className: 'detail-popup' })
         .addTo(layers.planning)
@@ -673,7 +697,7 @@
     // ════════════════════════════════════════
     const API_LAYER_MAP = {
       riskZone:        { group: layers.public,   color: '#0284c7' },
-      zoningPlan:      { group: layers.planning, color: '#ec407a' },
+      zoningPlan:      { group: layers.planning, color: '#7c3aed' },
       planProject:     { group: layers.project,  color: '#16a34a' },
       approvedProject: { group: layers.approved, color: '#ca8a04' },
       buildPlan:       { group: layers.heritage, color: '#ad1457' }
@@ -722,7 +746,7 @@
             const clean = sanitizeGeoJSON(item.geoJsonData)
             if (!clean) return
             const geoLayer = L.geoJSON(clean, {
-              style: () => ({ color, weight: 2.5, fillOpacity: 0.2 }),
+              style: () => ({ color, fillColor: color, weight: 2.5, fillOpacity: 0.2 }),
               pointToLayer: (f, latlng) => {
                 if (!latlng || latlng.lat == null || latlng.lng == null) return null
                 return L.marker(latlng, { icon: makeMarker(color) })
@@ -838,7 +862,7 @@
         const isSel = state.selected === loc.id
         const color = TYPE_COLOR[loc.mapType] || '#ec407a'
         const m = L.marker([loc.lat, loc.lng], {
-          icon: makeMarker(isSel ? '#ad1457' : color, isSel),
+          icon: makeMarker(color, isSel),
           zIndexOffset: isSel ? 1000 : 0
         }).addTo(layers.building)
         m.bindPopup(() => buildPopup(loc), { maxWidth: 300, className: 'detail-popup' })
@@ -900,7 +924,7 @@
         <!-- Body -->
         <div class="detail-body">
           ${loc.address ? `<div class="detail-row">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            ${IC.pin}
             <span>${[loc.house_no, loc.address].filter(Boolean).join(' ')}</span>
           </div>` : ''}
           <div class="detail-row" style="gap:.4rem;flex-wrap:wrap;">
@@ -961,8 +985,8 @@
       state.panelOpen = open !== undefined ? open : !state.panelOpen
       document.getElementById('panel').classList.toggle('collapsed', !state.panelOpen)
       const edgeIcon = document.getElementById('edge-icon')
-      edgeIcon.querySelector('path').setAttribute('d',
-        state.panelOpen ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6')
+      edgeIcon.classList.toggle('bi-chevron-left', state.panelOpen)
+      edgeIcon.classList.toggle('bi-chevron-right', !state.panelOpen)
       // show/hide mobile backdrop
       const backdrop = document.getElementById('panel-backdrop')
       if (backdrop) backdrop.style.display = (state.panelOpen && window.innerWidth <= 768) ? 'block' : 'none'
@@ -989,6 +1013,7 @@
     function clearAllFilters() {
       state.search = ''; state.type = ''; state.year = ''; state.program = ''; state.maxDist = 500
       document.getElementById('nav-search').value = ''
+      syncSearchUi()
       document.getElementById('sel-type').value = ''
       document.getElementById('sel-year').value = ''
       document.getElementById('sel-program').value = ''
@@ -997,10 +1022,35 @@
 
     // Search (debounced)
     let searchTimer
-    document.getElementById('nav-search').addEventListener('input', e => {
+    const navSearch = document.getElementById('nav-search')
+    const navSearchClear = document.getElementById('nav-search-clear')
+    const navSearchShortcut = document.querySelector('.nav-search-shortcut')
+    function syncSearchUi() {
+      const hasText = Boolean(navSearch.value.trim())
+      navSearchClear.classList.toggle('d-none', !hasText)
+      navSearchShortcut?.classList.toggle('d-none', hasText)
+    }
+    navSearch.addEventListener('input', e => {
+      syncSearchUi()
       clearTimeout(searchTimer)
       searchTimer = setTimeout(() => { state.search = e.target.value.trim(); update() }, 250)
     })
+    navSearchClear.addEventListener('click', () => {
+      clearTimeout(searchTimer)
+      navSearch.value = ''
+      state.search = ''
+      syncSearchUi()
+      update()
+      navSearch.focus()
+    })
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        navSearch.focus()
+        navSearch.select()
+      }
+    })
+    syncSearchUi()
 
     document.getElementById('sel-type').addEventListener('change', e => { state.type = e.target.value; update() })
     document.getElementById('sel-year').addEventListener('change', e => {
