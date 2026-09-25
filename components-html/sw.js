@@ -1,4 +1,4 @@
-const CACHE = 'กองชาง-v19'
+const CACHE = 'กองชาง-v21'
 
 // precache เฉพาะหน้าแรกเท่านั้น — ไฟล์ CSS/JS ใน production build มี hash ต่อท้ายชื่อ
 // (/map/assets/index-xxxx.css) จึงระบุล่วงหน้าไม่ได้ ถ้าใส่ชื่อผิด addAll จะ reject

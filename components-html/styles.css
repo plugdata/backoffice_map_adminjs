@@ -1760,3 +1760,52 @@ body { color: #3d2631; }
 }
 #panel-toggle:hover { color: #fff; background: rgba(255, 255, 255, .28); border-color: #fff; }
 .nav-sep { background: rgba(255, 255, 255, .34); }
+
+
+/* ============================================================
+   MOURNING MEMORIAL THEME
+============================================================ */
+.mourning-theme { --pink-50:#fafafa; --pink-100:#eeeeee; --pink-200:#dcdcdc; --pink-300:#c4c4c4; --pink-400:#9e9e9e; --pink-500:#666; --pink-600:#4a4a4a; --pink-700:#363636; --pink-800:#262626; --pink-900:#171717; background:#ededed; color:#242424; }
+.mourning-theme #navbar { background:#202020; color:#fff; border-top:4px solid #111; border-bottom-color:#555; box-shadow:0 3px 14px rgba(0,0,0,.28); }
+.mourning-theme #navbar .brand-logo { background:rgba(255,255,255,.1); border-color:#777; }
+.mourning-theme #navbar .brand-logo img,.mourning-theme .map-loading-logo { filter:grayscale(1) brightness(1.2) contrast(.95); }
+.mourning-theme #nav-search { background:rgba(255,255,255,.1); border-color:#777; }
+.mourning-theme #nav-search:focus { background:rgba(255,255,255,.18); border-color:#ddd; }
+.mourning-theme #panel-toggle { color:#fff; background:#303030; border-color:#777; }
+.mourning-theme #panel-toggle:hover { background:#4a4a4a; border-color:#ddd; }
+.mourning-theme .nav-sep { background:#666; }
+.mourning-theme #panel,.mourning-theme #filter-section,.mourning-theme #results-header { background:#f8f8f8; border-color:#d0d0d0; }
+.mourning-theme #cards-list { background:#ededed; }
+.mourning-theme #filter-section .filter-title,.mourning-theme .layer-section-title,.mourning-theme .card-title-loc { color:#202020; }
+.mourning-theme #filter-section .filter-title { border-left-color:#444; }
+.mourning-theme .filter-title-icon,.mourning-theme .nav-search-icon { color:#555; }
+.mourning-theme .filter-row select,.mourning-theme #nav-search-wrap,.mourning-theme .loc-card { border-color:#bdbdbd; }
+.mourning-theme .filter-row select:focus,.mourning-theme #nav-search-wrap:focus-within { border-color:#555; box-shadow:0 0 0 3px rgba(0,0,0,.1); }
+.mourning-theme .loc-card { background:#fff; }
+.mourning-theme .loc-card:hover,.mourning-theme .loc-card.selected { border-color:#555; }
+.mourning-theme .loc-card.selected { box-shadow:0 0 0 3px rgba(0,0,0,.12); }
+.mourning-theme #layer-toggle-btn,.mourning-theme .btn-act.primary { background:#333; border-color:#333; color:#fff; }
+.mourning-theme #layer-toggle-btn:hover,.mourning-theme .btn-act.primary:hover { background:#111; border-color:#111; }
+.mourning-theme #layer-panel { border-color:#aaa; box-shadow:0 8px 22px rgba(0,0,0,.16); }
+.mourning-theme .btn-clear-all { color:#333; border-color:#999; }
+.mourning-theme .btn-clear-all:hover { color:#111; border-color:#555; background:#eee; }
+.mourning-theme .results-count strong,.mourning-theme .card-year-badge { color:#333; }
+.mourning-theme .card-year-badge { background:#e5e5e5; }
+.mourning-theme .leaflet-tile-pane { filter:grayscale(1) contrast(.96); }
+.mourning-theme .leaflet-control-zoom a,.mourning-theme .leaflet-control-layers,.mourning-theme .leaflet-bar a { filter:grayscale(1); }
+.mourning-modal-backdrop { position:fixed; inset:0; z-index:3000; display:flex; align-items:center; justify-content:center; padding:1rem; background:rgba(15,15,15,.78); opacity:1; visibility:visible; transition:opacity .24s ease,visibility .24s ease; }
+.mourning-modal-backdrop.is-hidden { opacity:0; visibility:hidden; pointer-events:none; }
+.mourning-modal { position:relative; width:min(520px,100%); max-height:min(690px,calc(100vh - 2rem)); overflow:auto; padding:2.5rem 2rem 1.75rem; text-align:center; color:#222; background:#f7f7f7; border:1px solid #aaa; border-top:6px solid #222; box-shadow:0 18px 60px rgba(0,0,0,.42); transform:translateY(12px) scale(.98); transition:transform .28s ease; }
+.mourning-modal-backdrop.is-ready .mourning-modal { transform:translateY(0) scale(1); }
+.mourning-modal-close { position:absolute; top:.65rem; right:.65rem; width:2rem; height:2rem; color:#444; background:transparent; border:1px solid #aaa; border-radius:50%; }
+.mourning-modal-close:hover { color:#000; background:#e5e5e5; border-color:#555; }
+.mourning-emblem { margin-bottom:.8rem; color:#333; font-size:2rem; }
+.mourning-kicker { color:#555; font-size:.9rem; letter-spacing:.08em; font-weight:600; }
+.mourning-modal h1 { margin:.75rem 0 1rem; color:#171717; font-size:clamp(1.25rem,3.5vw,1.7rem); line-height:1.65; font-weight:700; }
+.mourning-divider { width:76px; height:1px; margin:0 auto 1rem; background:#555; }
+.mourning-message { margin:0; color:#444; font-size:1rem; line-height:1.9; }
+.mourning-signature { margin:1.15rem 0 1.35rem; color:#555; font-size:.9rem; }
+.mourning-modal-action { min-width:150px; padding:.65rem 1.2rem; color:#fff; background:#292929; border:1px solid #111; border-radius:4px; font:inherit; font-weight:600; }
+.mourning-modal-action:hover { background:#000; }
+.mourning-modal-open { overflow:hidden; }
+@media (max-width:520px) { .mourning-modal { padding:2.25rem 1.25rem 1.4rem; } .mourning-modal h1 { font-size:1.2rem; } .mourning-message { font-size:.92rem; } }

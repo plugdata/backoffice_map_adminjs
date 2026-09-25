@@ -8,7 +8,7 @@
 
   <!-- PWA -->
   <link rel="manifest" href="./manifest.json" />
-  <meta name="theme-color" content="#880e4f" />
+  <meta name="theme-color" content="#1f1f1f" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 
-<body>
+<body class="mourning-theme">
   <!-- Loading overlay (แสดงตอนกำลังโหลดข้อมูลแผนที่) -->
   <div id="map-loading" class="d-none">
     <div class="map-loading-box">
@@ -38,6 +38,22 @@
   <!-- ════════════════════════════════════════
      NAVBAR
 ════════════════════════════════════════ -->
+
+
+  <!-- Memorial welcome popup -->
+  <div id="mourning-modal" class="mourning-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="mourning-modal-title">
+    <div class="mourning-modal" role="document">
+      <button id="mourning-modal-close-icon" class="mourning-modal-close" type="button" aria-label="ปิดหน้าต่าง" title="ปิดหน้าต่าง"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      <div class="mourning-emblem" aria-hidden="true"><i class="bi bi-flower1"></i></div>
+      <div class="mourning-kicker">น้อมรำลึกในพระมหากรุณาธิคุณ</div>
+      <h1 id="mourning-modal-title">สมเด็จพระนางเจ้าสิริกิติ์<br />พระบรมราชินีนาถ<br />พระบรมราชชนนีพันปีหลวง</h1>
+      <div class="mourning-divider"></div>
+      <p class="mourning-message">ขอน้อมรำลึกถึงพระมหากรุณาธิคุณ<br />ทรงสถิตในดวงใจของปวงชนชาวไทยตราบนิรันดร์</p>
+      <p class="mourning-signature">เทศบาลนครตรัง</p>
+      <button id="mourning-modal-close" class="mourning-modal-action" type="button">เข้าสู่แผนที่</button>
+    </div>
+  </div>
+
   <nav id="navbar">
 
     <!-- Panel toggle (hamburger) -->
@@ -1082,6 +1098,23 @@
     /* ════════════════════════════════════════
        INIT — โหลดข้อมูลจาก API
     ════════════════════════════════════════ */
+
+    /* ????????????????????????????????????????
+       MEMORIAL WELCOME POPUP
+    ???????????????????????????????????????? */
+    const mourningModal = document.getElementById('mourning-modal')
+    const closeMourningModal = () => {
+      mourningModal?.classList.add('is-hidden')
+      mourningModal?.setAttribute('aria-hidden', 'true')
+      document.body.classList.remove('mourning-modal-open')
+    }
+    document.getElementById('mourning-modal-close')?.addEventListener('click', closeMourningModal)
+    document.getElementById('mourning-modal-close-icon')?.addEventListener('click', closeMourningModal)
+    mourningModal?.addEventListener('click', e => { if (e.target === mourningModal) closeMourningModal() })
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMourningModal() })
+    document.body.classList.add('mourning-modal-open')
+    setTimeout(() => mourningModal?.classList.add('is-ready'), 40)
+
     fetchMapData('')
 
     /* ════════════════════════════════════════
